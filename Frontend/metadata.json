@@ -1,0 +1,6 @@
+{
+  "name": "PRTC Transport Portal - SafrSaathi",
+  "description": "Punjab Roadways Transport Corporation official digital transit portal, pass application, approval dashboard, and ticket booking system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
