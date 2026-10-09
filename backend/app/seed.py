@@ -12,7 +12,7 @@ SEED = {
 {"id":"khalsa","name":"Khalsa College","city":"Amritsar","location":"Grand Trunk Road, Amritsar, Punjab","pendingCount":3,"statusTag":"Awaiting Review","adminName":"Dr. M. Grewal (Registrar)","established":"1892"},
 {"id":"gndu","name":"Guru Nanak Dev University (GNDU)","city":"Amritsar","location":"Grand Trunk Road, Amritsar, Punjab","pendingCount":5,"statusTag":"Pre-cleared","adminName":"Dr. H. Bawa (Director Student Affairs)","established":"1969"},
 {"id":"bikram","name":"Govt. Bikram College of Commerce","city":"Patiala","location":"Lower Mall Road, Patiala, Punjab","pendingCount":3,"statusTag":"Pre-cleared","adminName":"Prof. K. Sandhu (Admin Office)","established":"1945"},
-{"id":"ccet","name":"Chandigarh College of Engg. & Tech (CCET)","city":"Chandigarh","location":"Sector 26, Chandigarh","pendingCount":2,"statusTag":"Pre-cleared","adminName":"Dr. D. Sharma","established":"2002"},
+{"id":"ccet","name":"Chandigarh Engineering College-CGC Landran","city":"Chandigarh","location":"Sector 112, Chandigarh","pendingCount":2,"statusTag":"Pre-cleared","adminName":"Dr. D. Sharma","established":"2001"},
 {"id":"pu_patiala","name":"Punjabi University","city":"Patiala","location":"NH 64, Urban Estate, Patiala, Punjab","pendingCount":4,"statusTag":"Awaiting Review","adminName":"Dr. T. S. Benipal","established":"1962"}],
 "schedules":[
 {"routeNumber":"PRTC-101","from":"Chandigarh ISBT 43","to":"Patiala Bus Stand","departureTime":"06:00 AM","arrivalTime":"07:15 AM","busType":"HVAC","fare":110,"availableSeats":24,"frequency":"Every 15 mins"},

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
+import { api } from '../utils/api';
 
 interface PassQrModalProps {
   passData: {
@@ -13,6 +15,8 @@ interface PassQrModalProps {
     validUntil?: string;
     concession?: string;
     amount?: string | number;
+    applicationId?: string;
+    qrCodeDataUrl?: string | null;
   } | null;
   onClose: () => void;
 }
@@ -74,6 +78,47 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     }, 1000);
     return () => clearInterval(interval);
   }, [passData]);
+
+  // Real signed QR code (issued by the backend after final PRTC approval)
+  const [realQr, setRealQr] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setQrError(null);
+    if (passData?.qrCodeDataUrl) {
+      setRealQr(passData.qrCodeDataUrl);
+      return;
+    }
+    setRealQr(null);
+    if (!passData?.applicationId) return;
+
+    let cancelled = false;
+    api
+      .passQr(passData.applicationId)
+      .then((r) => {
+        if (!cancelled) setRealQr(r.qrCodeDataUrl);
+      })
+      .catch((e) => {
+        if (!cancelled) setQrError(e.message || 'QR could not be loaded');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [passData?.applicationId, passData?.qrCodeDataUrl]);
+
+  // Instant, scannable QR generated in the browser from the pass ID.
+  // It is replaced by the backend-signed QR as soon as that loads.
+  const [localQr, setLocalQr] = useState<string | null>(null);
+  useEffect(() => {
+    const text = passData?.ticketNumber || passData?.passId;
+    if (!text || realQr) {
+      setLocalQr(null);
+      return;
+    }
+    QRCode.toDataURL(`SAFRSAATHI:${text}`, { margin: 1, width: 320 })
+      .then(setLocalQr)
+      .catch(() => setLocalQr(null));
+  }, [passData?.ticketNumber, passData?.passId, realQr]);
 
   if (!passData) return null;
 
@@ -178,6 +223,22 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
         <div className="p-6 flex flex-col items-center text-center">
           {/* Simulated QR Code Canvas */}
           <div className="p-4 bg-white border-2 border-dashed border-[#000666] rounded-2xl shadow-inner mb-4 relative group">
+            {realQr || localQr ? (
+              <div className="flex flex-col items-center">
+                <div className="w-48 h-48 bg-white rounded-xl flex items-center justify-center p-1">
+                  <img src={(realQr || localQr) as string} alt="Pass QR code" className="w-full h-full object-contain" />
+                </div>
+                <p className="text-[9px] text-[#767683] mt-1">
+                  {realQr ? 'Signed by PRTC server' : 'Pass-ID QR (signed version loads after approval)'}
+                </p>
+              </div>
+            ) : passData.applicationId ? (
+              <div className="w-48 h-48 bg-[#f5f3f3] rounded-xl flex items-center justify-center p-3 text-center">
+                <p className={`text-[11px] ${qrError ? 'text-red-700' : 'text-[#767683]'}`}>
+                  {qrError || 'Loading signed QR…'}
+                </p>
+              </div>
+            ) : (
             <div className="w-48 h-48 bg-[#f5f3f3] rounded-xl flex flex-col items-center justify-center p-2 relative overflow-hidden">
               {/* QR Pattern visual */}
               <div className="grid grid-cols-6 gap-1 w-full h-full opacity-80">
@@ -200,6 +261,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
                 </div>
               </div>
             </div>
+            )}
             <div className="text-[10px] font-mono text-[#767683] mt-2">
               SECURITY CODE: {displayPassId}
             </div>

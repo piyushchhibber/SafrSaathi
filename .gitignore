@@ -1,0 +1,23 @@
+# Runtime secrets and local state
+.env
+.env.local
+*.db
+*.sqlite
+uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# JavaScript
+node_modules/
+dist/
+
+# Local environment files
+.env.txt
+**/.env.txt
+
+# Local database files
+backend/data/

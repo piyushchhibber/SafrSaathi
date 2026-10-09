@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile, College, StudentApplication } from '../types';
 import { DocumentViewerModal, DocumentInfo } from './DocumentViewerModal';
 import confetti from 'canvas-confetti';
+import { ConductorVerifier } from './ConductorVerifier';
 
 interface PrtcAdminDashboardProps {
   userProfile: UserProfile;
@@ -68,6 +69,12 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
           city: 'Chandigarh',
         };
 
+  // Does an application belong to a given college?
+  const appBelongsToCollege = (app: StudentApplication, col: College) =>
+    app.collegeId === col.id ||
+    (!!app.collegeName && app.collegeName.includes(col.name)) ||
+    (!!app.collegeName && col.name.includes(app.collegeName));
+
   // Applications for this selected college
   const collegeApps = (applications || []).filter((app) => {
     if (!app) return false;
@@ -87,11 +94,12 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
         ? app.status === 'college_approved'
         : app.status === 'approved';
 
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      (app.name && app.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (app.studentId && app.studentId.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (app.route && app.route.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (app.collegeName && app.collegeName.toLowerCase().includes(searchQuery.toLowerCase()));
+      (app.name && app.name.toLowerCase().includes(q)) ||
+      (app.studentId && app.studentId.toLowerCase().includes(q)) ||
+      (app.route && app.route.toLowerCase().includes(q)) ||
+      (app.collegeName && app.collegeName.toLowerCase().includes(q));
 
     return matchesCol && matchesFilter && matchesSearch;
   });
@@ -100,7 +108,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
     const updatedApp: StudentApplication = {
       ...app,
       status: 'approved',
-      prtcAdminId: userProfile?.adminId || userProfile?.passId || 'PRTC-HQ-001',
+      prtcAdminId: userProfile?.passId || 'PRTC-HQ-001',
       prtcVerifiedBy: (userProfile?.name || 'Authorized Inspector').toUpperCase() + ' (DEPOT SUPT.)',
       prtcVerifiedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
     };
@@ -114,7 +122,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
     const updatedApp: StudentApplication = {
       ...app,
       status: 'rejected',
-      prtcAdminId: userProfile?.adminId || userProfile?.passId || 'PRTC-HQ-001',
+      prtcAdminId: userProfile?.passId || 'PRTC-HQ-001',
       prtcVerifiedBy: (userProfile?.name || 'Authorized Inspector').toUpperCase(),
       prtcVerifiedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
     };
@@ -122,6 +130,8 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
     onUpdateApplication(updatedApp);
     setSelectedApp(updatedApp);
   };
+
+  const stampedCount = applications.filter((a) => a.status === 'college_approved').length;
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in">
@@ -140,7 +150,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
             </div>
             <p className="text-xs text-[#454652] mt-0.5 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm text-[#000666]">badge</span>
-              Admin ID: <span className="font-mono font-bold text-[#000666]">{userProfile.adminId || 'PRTC-HQ-ADMIN-001'}</span> • Punjab Transport Dept.
+              Admin ID: <span className="font-mono font-bold text-[#000666]">{userProfile.passId || 'PRTC-HQ-ADMIN-001'}</span> • Punjab Transport Dept.
             </p>
           </div>
         </div>
@@ -155,6 +165,9 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Conductor pass scanner */}
+      <ConductorVerifier />
 
       {/* College Selection Cards Strip */}
       <div className="space-y-2.5">
@@ -186,7 +199,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
               </span>
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  applications.filter((a) => a.status === 'college_approved').length > 0
+                  stampedCount > 0
                     ? selectedCollegeId === 'all'
                       ? 'bg-amber-400 text-black font-black'
                       : 'bg-amber-100 text-amber-900 font-bold'
@@ -195,7 +208,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                     : 'bg-gray-100 text-[#767683]'
                 }`}
               >
-                {applications.filter((a) => a.status === 'college_approved').length} Stamped
+                {stampedCount} Stamped
               </span>
             </div>
             <h4 className="font-extrabold text-xs leading-snug">All Punjab Institutions</h4>
@@ -206,11 +219,9 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
 
           {colleges.map((col) => {
             const isSelected = col.id === selectedCollegeId;
-            const readyForPrtc = applications.filter(
-              (a) =>
-                (a.collegeId === col.id || (a.collegeName && a.collegeName.includes(col.name)) || (a.collegeName && col.name.includes(a.collegeName))) &&
-                a.status === 'college_approved'
-            ).length;
+            const colApps = applications.filter((a) => appBelongsToCollege(a, col));
+            const readyForPrtc = colApps.filter((a) => a.status === 'college_approved').length;
+            const totalForCol = colApps.length;
 
             return (
               <div
@@ -246,7 +257,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                 </div>
                 <h4 className="font-extrabold text-xs leading-snug line-clamp-2">{col.name}</h4>
                 <p className={`text-[11px] mt-1 ${isSelected ? 'text-[#bdc2ff]' : 'text-[#767683]'}`}>
-                  {col.totalStudents || 850}+ Registered Enrolments
+                  {totalForCol} Total Applications
                 </p>
               </div>
             );
@@ -446,7 +457,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h5 className="font-extrabold text-xs uppercase tracking-wider text-[#767683]">
-                    Attached Student Proofs ({3} Docs)
+                    Attached Student Proofs (3 Docs)
                   </h5>
                   <button
                     onClick={() => handleOpenDocViewer('aadhaar', selectedApp)}
@@ -570,6 +581,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                         college: selectedApp.collegeName,
                         validUntil: 'Active for 3 Months (90 Days)',
                         rollNo: selectedApp.rollNumber,
+                        applicationId: selectedApp.id,
                       })
                     }
                     className="w-full py-2.5 rounded-xl bg-[#000666] text-white text-xs font-bold hover:bg-[#1a237e] transition flex items-center justify-center gap-2"
@@ -597,6 +609,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
           )}
         </div>
       </div>
+
       {/* Attached Document Viewer Modal */}
       {isDocModalOpen && selectedApp && (
         <DocumentViewerModal

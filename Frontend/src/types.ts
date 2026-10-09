@@ -5,7 +5,8 @@ export type PortalRole =
   | 'passenger'
   | 'college_admin'
   | 'prtc_admin'
-  | 'schedules';
+  | 'schedules'
+  | 'one_day_pass';
 
 export type UserRoleType = 'student' | 'corporate' | 'passenger' | 'college_admin' | 'prtc_admin';
 
@@ -79,6 +80,7 @@ export interface UserProfile {
   id?: string;
   name: string;
   passId: string;
+  adminId?: string;
   email: string;
   phone: string;
   avatarUrl: string;
@@ -117,4 +119,3 @@ export interface RouteSchedule {
   availableSeats: number;
   frequency: string;
 }
-

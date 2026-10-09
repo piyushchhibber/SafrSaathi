@@ -1,32 +1,106 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserProfile, StudentApplication, College } from '../types';
-import { mockStudentApplications } from '../data/mockData';
 
 interface StudentDashboardProps {
   userProfile: UserProfile;
   applications: StudentApplication[];
-  colleges: College[];
+  colleges?: College[];
   onOpenPassModal: (passData: any) => void;
   onOpenApplicationModal: () => void;
   onOpenEditProfile: () => void;
 }
 
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/$/, '');
+const TOKEN_KEY = 'prtc_access_token';
+
+const VALIDITY_LABEL: Record<string, string> = {
+  Monthly: '1 Month (30 Days)',
+  Quarterly: '3 Months (90 Days)',
+  Semester: '6 Months (180 Days)',
+};
+
+// Show only the last 4 digits of an Aadhaar number
+const maskAadhaar = (value?: string) => {
+  if (!value) return '—';
+  const digits = value.replace(/\D/g, '');
+  if (digits.length < 4) return value;
+  return `XXXX-XXXX-${digits.slice(-4)}`;
+};
+
+const getInitials = (name?: string) =>
+  (name || '?')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('');
+
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   userProfile,
   applications = [],
-  colleges = [],
   onOpenPassModal,
   onOpenApplicationModal,
   onOpenEditProfile,
 }) => {
-  // Find current student's latest application
-  const myApp = (applications || []).find(
-    (app) =>
-      (app?.name && userProfile?.name && app.name.toLowerCase() === userProfile.name.toLowerCase()) ||
-      (app?.studentId && userProfile?.passId && app.studentId === userProfile.passId)
-  ) || (applications && applications[0]) || mockStudentApplications[0];
+  // Find the current student's application: match by id first, name only if the app has no studentId
+  const myApp: StudentApplication | undefined = (applications || []).find((app) => {
+    if (!app) return false;
+    if (app.studentId && userProfile?.id) return app.studentId === userProfile.id;
+    return (
+      !!app.name &&
+      !!userProfile?.name &&
+      app.name.toLowerCase() === userProfile.name.toLowerCase()
+    );
+  });
 
-  const [selectedDocPreview, setSelectedDocPreview] = useState<{ title: string; file: string; type: string } | null>(null);
+  const [selectedDocPreview, setSelectedDocPreview] = useState<{
+    title: string;
+    file: string;
+    type: string;
+  } | null>(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+
+  const isApproved = myApp?.status === 'approved';
+
+  // Fetch the signed QR code once the pass is fully approved
+  useEffect(() => {
+    if (!myApp?.id || !isApproved) {
+      setQrCodeDataUrl(null);
+      return;
+    }
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      setQrCodeDataUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    setQrLoading(true);
+
+    fetch(`${API_BASE}/applications/${myApp.id}/qr`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('QR could not be issued');
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setQrCodeDataUrl(data.qrCodeDataUrl ?? null);
+      })
+      .catch((error) => {
+        console.error('QR fetch failed:', error);
+        if (!cancelled) setQrCodeDataUrl(null);
+      })
+      .finally(() => {
+        if (!cancelled) setQrLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myApp?.id, isApproved]);
 
   // Status mapping
   const getApprovalStages = (app?: StudentApplication) => {
@@ -56,17 +130,36 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const { stage1Status, stage2Status } = getApprovalStages(myApp);
 
+  const collegeLabel =
+    userProfile?.college || userProfile?.institution || myApp?.collegeName || 'College not set';
+  const rollLabel = userProfile?.rollNo || myApp?.rollNumber || '—';
+  const passIdLabel = userProfile?.passId || (isApproved ? myApp?.id : undefined) || 'Not issued';
+  const validityLabel = (myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '—';
+
   const virtualPassData = {
-    ticketNumber: userProfile?.passId || myApp?.studentId || 'PRTC-STU-9942',
-    holderName: userProfile?.name || myApp?.name || 'Navjot Singh Dhillon',
-    title: `${myApp?.passType || 'Student AC'} Concession Pass`,
-    route: myApp?.route || 'Patiala Central Bus Stand -> Thapar Campus Nabha Road',
-    college: userProfile?.college || userProfile?.institution || myApp?.collegeName || 'Thapar Institute of Engg. & Technology',
-    validUntil: '3 Months Active (Quarterly Pass)',
-    rollNo: userProfile?.rollNo || myApp?.rollNumber || '102203418',
+    ticketNumber: passIdLabel,
+    holderName: userProfile?.name || myApp?.name || '',
+    title: `${myApp?.passType || 'Student'} Concession Pass`,
+    route: myApp?.route || '—',
+    college: collegeLabel,
+    validUntil: validityLabel,
+    rollNo: rollLabel,
     avatarUrl: userProfile?.avatarUrl,
-    aadhaarNo: userProfile?.aadhaarNumber || myApp?.aadhaarNumber || '7842-XXXX-4821',
+    aadhaarNo: maskAadhaar(userProfile?.aadhaarNumber || myApp?.aadhaarNumber),
+    applicationId: myApp?.id,
+    qrCodeDataUrl,
   };
+
+  const Avatar: React.FC<{ className: string }> = ({ className }) =>
+    userProfile?.avatarUrl ? (
+      <img src={userProfile.avatarUrl} alt={userProfile.name} className={className} />
+    ) : (
+      <div
+        className={`${className} bg-[#000666]/10 text-[#000666] flex items-center justify-center font-black`}
+      >
+        {getInitials(userProfile?.name)}
+      </div>
+    );
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in">
@@ -74,11 +167,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#c6c5d4] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="relative">
-            <img
-              src={userProfile.avatarUrl}
-              alt={userProfile.name}
-              className="w-14 h-14 rounded-2xl object-cover border-2 border-[#000666] shadow-sm"
-            />
+            <Avatar className="w-14 h-14 rounded-2xl object-cover border-2 border-[#000666] shadow-sm" />
             <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-white"></span>
           </div>
           <div>
@@ -90,7 +179,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
             <p className="text-xs text-[#454652] mt-0.5 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm text-[#000666]">school</span>
-              {userProfile.college || userProfile.institution || 'Punjab Engineering College'} • Roll No: {userProfile.rollNo || '102203418'}
+              {collegeLabel} • Roll No: {rollLabel}
             </p>
           </div>
         </div>
@@ -122,12 +211,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <span className="material-symbols-outlined text-[#000666] text-lg">badge</span>
               Virtual Student Transit Pass
             </h3>
-            <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200">
-              Live Active QR
-            </span>
+            {isApproved ? (
+              <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200">
+                Live Active QR
+              </span>
+            ) : (
+              <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                Pass Not Issued
+              </span>
+            )}
           </div>
 
-          {/* Authentic Government Student Pass Graphic Card */}
           <div className="bg-gradient-to-br from-[#000666] via-[#1a237e] to-[#0d1442] text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-white/10 relative overflow-hidden">
             {/* Background Seal Watermark */}
             <div className="absolute -right-12 -bottom-12 opacity-10 pointer-events-none">
@@ -159,31 +253,27 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             {/* Student Photo & Details */}
             <div className="mt-4 flex gap-4 items-center">
               <div className="relative shrink-0">
-                <img
-                  src={userProfile.avatarUrl}
-                  alt={userProfile.name}
-                  className="w-20 h-24 rounded-2xl object-cover border-2 border-white/40 shadow-md bg-white/10"
-                />
-                <div className="absolute -bottom-1.5 -left-1.5 bg-[#138808] text-white text-[8px] font-black px-1 py-0.5 rounded uppercase">
-                  Verified
-                </div>
+                <Avatar className="w-20 h-24 rounded-2xl object-cover border-2 border-white/40 shadow-md bg-white/10" />
+                {isApproved && (
+                  <div className="absolute -bottom-1.5 -left-1.5 bg-[#138808] text-white text-[8px] font-black px-1 py-0.5 rounded uppercase">
+                    Verified
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 space-y-1">
                 <h3 className="font-black text-base sm:text-lg text-white leading-tight">
                   {userProfile.name}
                 </h3>
-                <p className="text-xs text-[#bdc2ff] font-medium leading-tight">
-                  {userProfile.college || userProfile.institution || 'Thapar Institute of Engg. & Technology'}
-                </p>
+                <p className="text-xs text-[#bdc2ff] font-medium leading-tight">{collegeLabel}</p>
                 <div className="pt-1 grid grid-cols-2 gap-1 text-[11px]">
                   <div>
                     <span className="text-white/60 block text-[9px] uppercase font-bold">Roll No.</span>
-                    <span className="font-mono font-bold text-white">{userProfile.rollNo || '102203418'}</span>
+                    <span className="font-mono font-bold text-white">{rollLabel}</span>
                   </div>
                   <div>
                     <span className="text-white/60 block text-[9px] uppercase font-bold">Pass ID</span>
-                    <span className="font-mono font-bold text-amber-300">{userProfile.passId || 'PRTC-STU-9942'}</span>
+                    <span className="font-mono font-bold text-amber-300">{passIdLabel}</span>
                   </div>
                 </div>
               </div>
@@ -193,38 +283,64 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="mt-4 bg-black/30 border border-white/10 rounded-2xl p-3">
               <div className="flex items-center justify-between text-[10px] text-white/70 font-bold uppercase tracking-wider mb-1">
                 <span>Sanctioned Route</span>
-                <span className="text-amber-300">{myApp?.passType || 'Student AC Service'}</span>
+                <span className="text-amber-300">{myApp?.passType || '—'}</span>
               </div>
               <p className="text-xs font-bold text-white leading-snug">
-                {myApp?.route || 'Patiala Central Bus Stand -> Thapar Campus Nabha Road'}
+                {myApp?.route || 'No route sanctioned yet'}
               </p>
               <div className="mt-2 flex items-center justify-between text-[10px] text-[#bdc2ff] border-t border-white/10 pt-1.5">
-                <span>Validity: 3 Months (90 Days)</span>
-                <span className="text-green-400 font-bold">Punjab Resident Verified</span>
+                <span>Validity: {validityLabel}</span>
+                {myApp?.isPunjabResident && (
+                  <span className="text-green-400 font-bold">Punjab Resident Verified</span>
+                )}
               </div>
             </div>
 
-            {/* Dynamic QR Code & Conductor Scan Bar */}
+            {/* QR Code & Conductor Scan Bar */}
             <div className="mt-4 bg-white rounded-2xl p-3.5 flex items-center justify-between gap-3 text-black">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-white border border-gray-300 rounded-lg p-1 flex items-center justify-center shrink-0 shadow-xs">
-                  {/* Generated QR Matrix Graphic */}
-                  <svg className="w-full h-full text-black" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm8-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm13-2h3v3h-3v-3zm0 5h3v3h-3v-3zm-5-5h3v3h-3v-3zm0 5h3v3h-3v-3zm5-2h3v2h-3v-2zM5 5h2v2H5V5zm12 0h2v2h-2V5zM5 17h2v2H5v-2z" />
-                  </svg>
+                  {qrCodeDataUrl ? (
+                    <img src={qrCodeDataUrl} alt="Pass QR code" className="w-full h-full object-contain" />
+                  ) : (
+                    <svg
+                      className={`w-full h-full ${isApproved ? 'text-black' : 'text-gray-300'}`}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm8-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm13-2h3v3h-3v-3zm0 5h3v3h-3v-3zm-5-5h3v3h-3v-3zm0 5h3v3h-3v-3zm5-2h3v2h-3v-2zM5 5h2v2H5V5zm12 0h2v2h-2V5zM5 17h2v2H5v-2z" />
+                    </svg>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></span>
-                    <span className="text-xs font-black text-[#000666]">LIVE CONDUCTOR QR</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        qrCodeDataUrl ? 'bg-green-600 animate-pulse' : 'bg-gray-400'
+                      }`}
+                    ></span>
+                    <span className="text-xs font-black text-[#000666]">
+                      {qrLoading
+                        ? 'LOADING QR…'
+                        : qrCodeDataUrl
+                        ? 'LIVE CONDUCTOR QR'
+                        : isApproved
+                        ? 'QR UNAVAILABLE'
+                        : 'QR NOT ISSUED'}
+                    </span>
                   </div>
-                  <p className="text-[10px] text-[#767683] mt-0.5">Encrypted PRTC Digital Transit Token</p>
+                  <p className="text-[10px] text-[#767683] mt-0.5">
+                    {isApproved
+                      ? 'Signed PRTC Digital Transit Token'
+                      : 'Issued after PRTC approval'}
+                  </p>
                 </div>
               </div>
 
               <button
                 onClick={() => onOpenPassModal(virtualPassData)}
-                className="px-3 py-1.5 rounded-xl bg-[#000666] text-white font-bold text-xs hover:bg-[#1a237e] transition shadow-xs shrink-0"
+                disabled={!isApproved}
+                className="px-3 py-1.5 rounded-xl bg-[#000666] text-white font-bold text-xs hover:bg-[#1a237e] transition shadow-xs shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Scan / Enlarge
               </button>
@@ -239,44 +355,54 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <span className="material-symbols-outlined text-[#000666] text-lg">track_changes</span>
               Concession Application Status Tracker
             </h3>
-            <span className="text-xs text-[#767683]">Ref ID: #{myApp?.id || 'APP-2024'}</span>
+            <span className="text-xs text-[#767683]">Ref ID: {myApp?.id ? `#${myApp.id}` : '—'}</span>
           </div>
 
-          {/* Two-Stage Approval Tracker Card */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#c6c5d4] shadow-xs space-y-6">
             {/* Overall Summary Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#fbf9f8] border border-[#c6c5d4]">
               <div>
-                <span className="text-[10px] uppercase font-bold text-[#767683] tracking-wider">Current Pipeline Status</span>
+                <span className="text-[10px] uppercase font-bold text-[#767683] tracking-wider">
+                  Current Pipeline Status
+                </span>
                 <div className="flex items-center gap-2 mt-0.5">
                   <h4 className="text-base font-black text-[#1b1c1c]">
-                    {myApp.status === 'approved'
-                      ? 'Pass Sanctioned & Disbursed'
+                    {!myApp
+                      ? 'No Application Submitted'
+                      : myApp.status === 'approved'
+                      ? 'Pass Sanctioned & Issued'
                       : myApp.status === 'college_approved'
                       ? 'College Approved • Under PRTC Review'
                       : myApp.status === 'rejected'
                       ? 'Application Rejected'
                       : 'Pending College Attestation'}
                   </h4>
-                  <span
-                    className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                      myApp.status === 'approved'
-                        ? 'bg-green-100 text-green-800'
-                        : myApp.status === 'college_approved'
-                        ? 'bg-blue-100 text-blue-800'
-                        : myApp.status === 'rejected'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}
-                  >
-                    {myApp.status.toUpperCase().replace('_', ' ')}
-                  </span>
+                  {myApp && (
+                    <span
+                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                        myApp.status === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : myApp.status === 'college_approved'
+                          ? 'bg-blue-100 text-blue-800'
+                          : myApp.status === 'rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {myApp.status.toUpperCase().replace(/_/g, ' ')}
+                    </span>
+                  )}
                 </div>
+                {myApp?.status === 'rejected' && myApp.rejectionReason && (
+                  <p className="text-[11px] text-red-700 mt-1">Reason: {myApp.rejectionReason}</p>
+                )}
               </div>
 
               <div className="text-right">
                 <span className="text-[10px] text-[#767683] block">Submitted On</span>
-                <span className="text-xs font-bold text-[#1b1c1c]">{myApp.submittedDate}</span>
+                <span className="text-xs font-bold text-[#1b1c1c]">
+                  {myApp?.submittedDate || 'Not submitted'}
+                </span>
               </div>
             </div>
 
@@ -318,10 +444,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
                             stage1Status === 'approved'
                               ? 'bg-green-100 text-green-800'
+                              : stage1Status === 'rejected'
+                              ? 'bg-red-100 text-red-800'
                               : 'bg-amber-100 text-amber-900'
                           }`}
                         >
-                          {stage1Status === 'approved' ? 'Stamped & Verified' : 'Awaiting Review'}
+                          {stage1Status === 'approved'
+                            ? 'Stamped & Verified'
+                            : stage1Status === 'rejected'
+                            ? 'Rejected'
+                            : 'Awaiting Review'}
                         </span>
                       </div>
                       <p className="text-[11px] text-[#454652] mt-0.5">
@@ -331,7 +463,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Visible Virtual College Stamp if approved */}
                 {stage1Status === 'approved' && (
                   <div className="mt-3 p-3 bg-white rounded-xl border-2 border-dashed border-[#000666]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
@@ -344,13 +475,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                             Official College Seal Applied
                           </span>
                           <span className="text-[9px] bg-blue-100 text-[#000666] font-mono px-1.5 rounded">
-                            {myApp.collegeStampId || 'TIET-SEAL-9921'}
+                            {myApp?.collegeStampId || '—'}
                           </span>
                         </div>
                         <p className="text-xs font-bold text-[#1b1c1c]">
-                          Attested by: {myApp.collegeVerifiedBy || 'DR. R. SINGLA (DEAN SW)'}
+                          Attested by: {myApp?.collegeVerifiedBy || '—'}
                         </p>
-                        <p className="text-[10px] text-[#767683]">Verified Date: {myApp.collegeVerifiedDate || '26 Aug 2026'}</p>
+                        <p className="text-[10px] text-[#767683]">
+                          Verified Date: {myApp?.collegeVerifiedDate || '—'}
+                        </p>
                       </div>
                     </div>
                     <span className="text-[10px] bg-green-50 text-green-800 font-bold px-2 py-1 rounded border border-green-200">
@@ -396,6 +529,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
                             stage2Status === 'approved'
                               ? 'bg-green-100 text-green-800'
+                              : stage2Status === 'rejected'
+                              ? 'bg-red-100 text-red-800'
                               : stage1Status === 'approved'
                               ? 'bg-blue-100 text-[#000666]'
                               : 'bg-gray-100 text-[#767683]'
@@ -403,6 +538,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         >
                           {stage2Status === 'approved'
                             ? 'Sanctioned & Active'
+                            : stage2Status === 'rejected'
+                            ? 'Rejected'
                             : stage1Status === 'approved'
                             ? 'In Depot Queue'
                             : 'Waiting Stage 1'}
@@ -427,82 +564,95 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                             State Transit Seal Issued
                           </span>
                           <span className="text-[9px] bg-green-100 text-green-800 font-mono px-1.5 rounded">
-                            {myApp.prtcAdminId || 'PRTC-DEPOT-04'}
+                            {myApp?.prtcAdminId || '—'}
                           </span>
                         </div>
                         <p className="text-xs font-bold text-[#1b1c1c]">
-                          Sanctioned by: {myApp.prtcVerifiedBy || 'GURMUKH SINGH (CHIEF DEPOT OFFICER)'}
+                          Sanctioned by: {myApp?.prtcVerifiedBy || '—'}
                         </p>
-                        <p className="text-[10px] text-[#767683]">Approval Date: {myApp.prtcVerifiedDate || '28 Aug 2026'}</p>
+                        <p className="text-[10px] text-[#767683]">
+                          Approval Date: {myApp?.prtcVerifiedDate || '—'}
+                        </p>
                       </div>
                     </div>
                     <span className="text-[10px] bg-green-600 text-white font-black px-2.5 py-1 rounded shadow-xs">
-                      100% ISSUED
+                      ISSUED
                     </span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Uploaded Documents Drawer / Quick View for Student */}
+            {/* Uploaded Documents */}
             <div className="pt-2 border-t border-[#eae8e7]">
               <h4 className="text-xs font-extrabold text-[#1b1c1c] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-sm text-[#000666]">folder_open</span>
                 Your Submitted Verification Documents
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div
-                  onClick={() =>
-                    setSelectedDocPreview({
-                      title: 'Aadhaar Card (Self-Signed Copy)',
-                      file: myApp.aadhaarFile || 'aadhaar_signed.pdf',
-                      type: 'Aadhaar ID Proof',
-                    })
-                  }
-                  className="p-3 bg-[#fbf9f8] hover:bg-white border border-[#c6c5d4] rounded-2xl cursor-pointer transition flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#000666] flex items-center justify-center font-bold">
-                      <span className="material-symbols-outlined text-base">badge</span>
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-[#1b1c1c] block group-hover:text-[#000666]">
-                        Aadhaar (Signed Copy)
-                      </span>
-                      <span className="text-[10px] font-mono text-[#767683]">{myApp.aadhaarNumber || '7842-XXXX-4821'}</span>
-                    </div>
-                  </div>
-                  <span className="material-symbols-outlined text-sm text-[#767683] group-hover:text-[#000666]">
-                    visibility
-                  </span>
-                </div>
 
-                <div
-                  onClick={() =>
-                    setSelectedDocPreview({
-                      title: 'College Fee Receipt Proof',
-                      file: myApp.feeReceiptFile || 'fee_receipt.pdf',
-                      type: 'College Enrolment Fee Proof',
-                    })
-                  }
-                  className="p-3 bg-[#fbf9f8] hover:bg-white border border-[#c6c5d4] rounded-2xl cursor-pointer transition flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
-                      <span className="material-symbols-outlined text-base">receipt_long</span>
+              {myApp ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div
+                    onClick={() =>
+                      setSelectedDocPreview({
+                        title: 'Aadhaar Card (Self-Signed Copy)',
+                        file: myApp.aadhaarFile || 'aadhaar_signed.pdf',
+                        type: 'Aadhaar ID Proof',
+                      })
+                    }
+                    className="p-3 bg-[#fbf9f8] hover:bg-white border border-[#c6c5d4] rounded-2xl cursor-pointer transition flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#000666] flex items-center justify-center font-bold">
+                        <span className="material-symbols-outlined text-base">badge</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-[#1b1c1c] block group-hover:text-[#000666]">
+                          Aadhaar (Signed Copy)
+                        </span>
+                        <span className="text-[10px] font-mono text-[#767683]">
+                          {maskAadhaar(myApp.aadhaarNumber)}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-xs font-bold text-[#1b1c1c] block group-hover:text-[#000666]">
-                        Latest Fee Receipt
-                      </span>
-                      <span className="text-[10px] font-mono text-[#767683]">{myApp.feeReceiptNo || 'TIET-REC-2026'}</span>
-                    </div>
+                    <span className="material-symbols-outlined text-sm text-[#767683] group-hover:text-[#000666]">
+                      visibility
+                    </span>
                   </div>
-                  <span className="material-symbols-outlined text-sm text-[#767683] group-hover:text-[#000666]">
-                    visibility
-                  </span>
+
+                  <div
+                    onClick={() =>
+                      setSelectedDocPreview({
+                        title: 'College Fee Receipt Proof',
+                        file: myApp.feeReceiptFile || 'fee_receipt.pdf',
+                        type: 'College Enrolment Fee Proof',
+                      })
+                    }
+                    className="p-3 bg-[#fbf9f8] hover:bg-white border border-[#c6c5d4] rounded-2xl cursor-pointer transition flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                        <span className="material-symbols-outlined text-base">receipt_long</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-[#1b1c1c] block group-hover:text-[#000666]">
+                          Latest Fee Receipt
+                        </span>
+                        <span className="text-[10px] font-mono text-[#767683]">
+                          {myApp.feeReceiptNo || '—'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="material-symbols-outlined text-sm text-[#767683] group-hover:text-[#000666]">
+                      visibility
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <p className="text-[11px] text-[#767683]">
+                  Documents will appear here after you submit a concession application.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -528,7 +678,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="bg-[#fbf9f8] border-2 border-dashed border-[#c6c5d4] rounded-2xl p-6 text-center space-y-2">
               <span className="material-symbols-outlined text-4xl text-[#000666]">picture_as_pdf</span>
               <p className="font-mono text-xs font-bold text-[#1b1c1c]">{selectedDocPreview.file}</p>
-              <p className="text-[11px] text-[#767683]">{selectedDocPreview.type} • Digitally Attested for PRTC Concession</p>
+              <p className="text-[11px] text-[#767683]">
+                {selectedDocPreview.type} • Digitally Attested for PRTC Concession
+              </p>
             </div>
 
             <div className="flex justify-end gap-2">

@@ -36,3 +36,24 @@ Open http://localhost:5173
 ## Demo
 
 Seeded demo accounts use password `demo1234`. Frontend OTP remains `0000` because it is a UI demo; replace it with a real SMS OTP provider before production.
+
+## Production configuration
+
+Use PostgreSQL instead of SQLite for deployment, set `ENVIRONMENT=production`,
+and provide a random `JWT_SECRET` of at least 32 characters. SQLite files are
+not suitable for ephemeral hosts such as Render free instances.
+
+Google Sign-In requires a Web OAuth client created in Google Cloud Console. Add
+the local and deployed frontend URLs as authorized JavaScript origins, then set
+the same client ID in both applications:
+
+```env
+# backend/.env
+GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+
+# Frontend/.env.local
+VITE_GOOGLE_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+```
+
+Google Sign-In can self-register students, corporate users, and passengers.
+College and PRTC administrator accounts must be provisioned by the authority.

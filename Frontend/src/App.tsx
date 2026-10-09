@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PortalRole, StudentApplication, BusTicket, UserProfile, RouteSchedule, UserRoleType } from './types';
 import {
   mockColleges,
-  mockStudentApplications,
   mockRecentTickets,
   mockUserProfile,
   mockSchedules,
@@ -29,7 +28,7 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState<PortalRole>('gateway');
   const [colleges, setColleges] = useState(mockColleges);
   const [schedules, setSchedules] = useState(mockSchedules);
-  const [applications, setApplications] = useState<StudentApplication[]>(mockStudentApplications);
+  const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [tickets, setTickets] = useState<BusTicket[]>(mockRecentTickets);
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const savedSession = getStoredSession();
@@ -55,6 +54,14 @@ export default function App() {
       })
       .catch((err) => console.warn('Backend unavailable; using bundled demo data.', err));
   }, []);
+
+  // Load the real applications for the logged-in user (scoped by role on the server)
+  const refreshApplications = () =>
+    api.listApplications().then(setApplications).catch((err) => console.warn('Could not load applications', err));
+
+  useEffect(() => {
+    if (userProfile && localStorage.getItem('prtc_access_token')) refreshApplications();
+  }, [userProfile?.id]);
 
   // Handle Authentication Completion
   const handleAuthSuccess = (profile: UserProfile, targetRole: UserRoleType) => {
@@ -82,17 +89,15 @@ export default function App() {
 
   // Application Updates (Approved by College or PRTC)
   const handleUpdateApplication = (updatedApp: StudentApplication) => {
-    setApplications((prev) => {
-      return prev.map((app) => (app.id === updatedApp.id ? updatedApp : app));
-    });
-    api.updateApplication(updatedApp).catch((err) => console.error('Failed to persist application update', err));
+    api.updateApplication(updatedApp)
+      .then((saved) => setApplications((prev) => prev.map((a) => (a.id === saved.id ? saved : a))))
+      .catch((err) => alert(`Could not save: ${err.message}`));
   };
 
   const handleNewStudentApplication = (newApp: StudentApplication) => {
-    setApplications((prev) => {
-      return [newApp, ...prev];
-    });
-    api.createApplication(newApp).catch((err) => console.error('Failed to persist new application', err));
+    api.createApplication(newApp)
+      .then((saved) => setApplications((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)]))
+      .catch((err) => alert(`Could not submit: ${err.message}`));
   };
 
   // Handle Profile Update Persistence

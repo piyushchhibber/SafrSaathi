@@ -1,8 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UserRoleType, UserProfile, College } from '../types';
 import { mockColleges } from '../data/mockData';
 import confetti from 'canvas-confetti';
 import { api } from '../utils/api';
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: { id: {
+        initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void;
+        renderButton: (element: HTMLElement, options: Record<string, unknown>) => void;
+      }};
+    };
+  }
+}
 
 interface AuthModalProps {
   initialRole?: UserRoleType;
@@ -63,6 +74,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [otpError, setOtpError] = useState<string | null>(null);
   const [targetPhone, setTargetPhone] = useState<string>('');
   const [resendTimer, setResendTimer] = useState<number>(30);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
   // Corporate Form State
   const [corpCompanyName, setCorpCompanyName] = useState('');
@@ -178,7 +191,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setOtpError(null);
   };
 
-  if (!isOpen) return null;
 
   // Student Address Validation (Must be Punjab)
   const validatePunjabResidency = (address: string): boolean => {
@@ -330,6 +342,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     triggerOtpVerification(prtcProfile, 'prtc_admin', prtcPhone || '+91 98140 11223');
   };
 
+  const handleGoogleCredential = async (response: { credential: string }) => {
+    try {
+      const profile: Partial<UserProfile> = {
+        roleType: activeTab,
+        phone: activeTab === 'student' ? studentPhone : activeTab === 'corporate' ? corpPhone : passPhone,
+        permanentAddress: activeTab === 'student' ? studentAddress : undefined,
+        aadhaarNumber: activeTab === 'student' ? studentAadhaar : undefined,
+        college: activeTab === 'student' ? studentCollege : undefined,
+        rollNo: activeTab === 'student' ? studentRollNo : undefined,
+        companyName: activeTab === 'corporate' ? corpCompanyName : undefined,
+      };
+      const result = await api.authenticateGoogle(response.credential, activeTab, profile);
+      localStorage.setItem('prtc_access_token', result.accessToken);
+      fireSuccess(result.profile, activeTab);
+      onClose();
+    } catch (err: any) {
+      setOtpError(err?.message || 'Google Sign-In failed.');
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || otpStep || !googleClientId || !googleButtonRef.current || !window.google?.accounts?.id) return;
+    googleButtonRef.current.innerHTML = '';
+    window.google.accounts.id.initialize({ client_id: googleClientId, callback: handleGoogleCredential });
+    window.google.accounts.id.renderButton(googleButtonRef.current, { theme: 'outline', size: 'large', width: 360, text: isSignUp ? 'signup_with' : 'signin_with' });
+  }, [
+    isOpen, otpStep, activeTab, isSignUp, googleClientId,
+    studentPhone, studentAddress, studentAadhaar, studentCollege, studentRollNo,
+    corpPhone, corpCompanyName, passPhone,
+  ]);
+
   const roleMeta = {
     student: {
       title: 'Student Portal',
@@ -363,7 +406,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     },
   };
 
-  const currentRoleMeta = roleMeta[activeTab] || roleMeta.student;
+const currentRoleMeta = roleMeta[activeTab] || roleMeta.student;
+
+if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in">
@@ -425,6 +470,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Modal Body with Role-Specific Login & Sign-Up Forms */}
         <div className="p-5 sm:p-6 overflow-y-auto flex-1 bg-[#fbf9f8]">
+          {!otpStep && googleClientId && activeTab !== 'college_admin' && activeTab !== 'prtc_admin' && (
+            <div className="mb-4 flex flex-col items-center gap-2">
+              <div ref={googleButtonRef} />
+              {otpError && <p className="text-xs text-red-700 text-center">{otpError}</p>}
+              <p className="text-[10px] text-[#767683]">Google Sign-In is available for student, corporate and passenger accounts.</p>
+            </div>
+          )}
           {otpStep ? (
             /* OTP Verification Screen */
             <div className="py-3 px-2 space-y-6 text-center animate-in fade-in">
