@@ -1,9 +1,15 @@
 import sys, json, re
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
-from backend.app.database import Base, engine, SessionLocal, ensure_columns
-from backend.app.models import College, StudentApplication, Ticket, RouteSchedule, User
-from backend.app.security import hash_password
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+try:
+    from .database import Base, engine, SessionLocal, ensure_columns
+    from .models import College, StudentApplication, Ticket, RouteSchedule, User
+    from .security import hash_password
+except (ImportError, ValueError):
+    from backend.app.database import Base, engine, SessionLocal, ensure_columns
+    from backend.app.models import College, StudentApplication, Ticket, RouteSchedule, User
+    from backend.app.security import hash_password
 
 SEED = {
 "colleges": [
@@ -81,4 +87,6 @@ def run():
 
         db.commit()
     finally: db.close()
-if __name__=='__main__': run()
+
+if __name__=='__main__':
+    run()

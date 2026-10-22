@@ -17,6 +17,12 @@ if sys.version_info < (3, 10):
 
 Base.metadata.create_all(bind=engine)
 ensure_columns()
+
+try:
+    from .seed import run as auto_seed
+    auto_seed()
+except Exception as exc:
+    print(f"Auto-seeding notification: {exc}")
 app = FastAPI(title="SafrSaathi PRTC API", version="1.0.0")
 
 configured_origins = [x.strip() for x in os.getenv("CORS_ORIGINS", "").split(",") if x.strip()]
@@ -25,11 +31,13 @@ local_development_origins = {
     "http://localhost:3001", "http://127.0.0.1:3001",
     "http://localhost:3003", "http://127.0.0.1:3003",
     "http://localhost:5173", "http://127.0.0.1:5173",
+    "https://safrsaathi.vercel.app",
 }
 origins = sorted(set(configured_origins) | local_development_origins)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -217,7 +225,13 @@ def auth_profile(body: AuthPayload, db: Session = Depends(get_db)):
     email = (p.get("email") or "").strip().lower()
     if not email:
         raise HTTPException(400, "Email is required")
-    user = db.scalar(select(User).where(User.email == email))
+    user = db.scalar(
+        select(User).where(
+            (User.email == email)
+            | (User.pass_id == email.upper())
+            | (User.pass_id == email)
+        )
+    )
 
     if body.mode == "register":
         if user:
@@ -290,7 +304,13 @@ def google_auth(body: GoogleAuthPayload, db: Session = Depends(get_db)):
     email = (identity.get("email") or "").lower().strip()
     if not email or not identity.get("email_verified"):
         raise HTTPException(401, "A verified Google email address is required")
-    user = db.scalar(select(User).where(User.email == email))
+    user = db.scalar(
+        select(User).where(
+            (User.email == email)
+            | (User.pass_id == email.upper())
+            | (User.pass_id == email)
+        )
+    )
     if user:
         if user.role_type != body.roleType:
             raise HTTPException(403, "This Google account is registered with a different role")
