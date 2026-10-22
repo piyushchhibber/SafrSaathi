@@ -59,6 +59,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     type: string;
   } | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [qrExpiresAt, setQrExpiresAt] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
 
   const isApproved = myApp?.status === 'approved';
@@ -87,7 +88,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         return res.json();
       })
       .then((data) => {
-        if (!cancelled) setQrCodeDataUrl(data.qrCodeDataUrl ?? null);
+        if (!cancelled) {
+          setQrCodeDataUrl(data.qrCodeDataUrl ?? null);
+          setQrExpiresAt(data.expiresAt ?? null);
+        }
       })
       .catch((error) => {
         console.error('QR fetch failed:', error);
@@ -148,6 +152,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     aadhaarNo: maskAadhaar(userProfile?.aadhaarNumber || myApp?.aadhaarNumber),
     applicationId: myApp?.id,
     qrCodeDataUrl,
+    expiresAt: qrExpiresAt || myApp?.passExpiresAt,
   };
 
   const Avatar: React.FC<{ className: string }> = ({ className }) =>

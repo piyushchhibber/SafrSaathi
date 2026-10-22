@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from .database import Base, engine, get_db
+from .database import Base, engine, get_db, ensure_columns
 from .models import (User, College, StudentApplication, Ticket, TicketVerification, RouteSchedule)
 from .security import hash_password, verify_password, create_token, decode_token, create_qr_token
 
@@ -16,6 +16,7 @@ if sys.version_info < (3, 10):
     raise RuntimeError("SafrSaathi backend requires Python 3.10 or newer.")
 
 Base.metadata.create_all(bind=engine)
+ensure_columns()
 app = FastAPI(title="SafrSaathi PRTC API", version="1.0.0")
 
 configured_origins = [x.strip() for x in os.getenv("CORS_ORIGINS", "").split(",") if x.strip()]
@@ -256,12 +257,19 @@ def auth_profile(body: AuthPayload, db: Session = Depends(get_db)):
         if p.get("roleType") and p.get("roleType") != user.role_type:
             raise HTTPException(403, "This account does not have the selected role")
 
-    apply_payload(user, p, protected=("id", "created_at", "password_hash", "email", "pass_id", "role_type"))
+    user.last_login_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
     return {
         "profile": serialize(user, ("password_hash", "created_at", "last_login_at")),
         "accessToken": create_token(user.id, user.role_type),
+    }
+
+
+@app.get("/api/auth/me")
+def auth_me(actor: User = Depends(current_user)):
+    return {
+        "profile": serialize(actor, ("password_hash", "created_at", "last_login_at")),
     }
 
 
@@ -344,7 +352,10 @@ def update_user(pass_id: str, body: GenericPayload, db: Session = Depends(get_db
 def list_apps(db: Session = Depends(get_db), actor: User = Depends(current_user)):
     query = select(StudentApplication).order_by(StudentApplication.created_at.desc())
     if actor.role_type == "student":
-        query = query.where(StudentApplication.student_id == actor.id)
+        query = query.where(
+            (StudentApplication.student_id == actor.id)
+            | (StudentApplication.student_id == actor.pass_id)
+        )
     elif actor.role_type == "college_admin":
         query = query.where(StudentApplication.college_id == actor.college_id)
     elif actor.role_type not in {"prtc_admin"}:
@@ -447,16 +458,24 @@ def create_ticket(
     p = body.data
     ticket_id = p.get("id") or f"tkt-{uuid.uuid4().hex[:10]}"
     route = p.get("route") or ""
+    norm_route = normalize_location(route)
     schedule = next(
         (
             x for x in db.scalars(select(RouteSchedule)).all()
-            if normalize_location(x.from_location) in normalize_location(route)
-            and normalize_location(x.to_location) in normalize_location(route)
+            if (
+                normalize_location(x.from_location) in norm_route
+                or any(w in norm_route for w in normalize_location(x.from_location).split() if len(w) > 3)
+            )
+            and (
+                normalize_location(x.to_location) in norm_route
+                or any(w in norm_route for w in normalize_location(x.to_location).split() if len(w) > 3)
+            )
         ),
         None,
     )
     if not schedule:
         raise HTTPException(400, "Select a published route and destination before booking")
+
     obj = Ticket(
         id=ticket_id,
         owner_pass_id=actor.pass_id,
@@ -581,11 +600,25 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
         raise HTTPException(404, "Application not found")
     if application.status != "approved":
         raise HTTPException(409, "A QR pass is available only after final PRTC approval")
-    if actor.role_type not in ADMIN_ROLES and application.student_id != actor.id:
+    if actor.role_type not in ADMIN_ROLES and application.student_id != actor.id and application.student_id != actor.pass_id:
         raise HTTPException(403, "You do not have permission to view this pass")
 
     days = PASS_DURATION_DAYS.get(getattr(application, "duration", None) or "", 30)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=days)
+    now = datetime.now(timezone.utc)
+    if not application.pass_issued_at:
+        application.pass_issued_at = now
+    if not application.pass_expires_at:
+        base_issued = application.pass_issued_at
+        if base_issued and base_issued.tzinfo is None:
+            base_issued = base_issued.replace(tzinfo=timezone.utc)
+        application.pass_expires_at = (base_issued or now) + timedelta(days=days)
+        db.commit()
+        db.refresh(application)
+
+    expires_at = application.pass_expires_at or (now + timedelta(days=days))
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
     token = create_qr_token(application.id, "student_pass", expires_at)
     return {
         "applicationId": application.id,

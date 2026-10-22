@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PortalRole, StudentApplication, BusTicket, UserProfile, RouteSchedule, UserRoleType } from './types';
 import {
   mockColleges,
-  mockRecentTickets,
   mockUserProfile,
   mockSchedules,
 } from './data/mockData';
@@ -24,16 +23,21 @@ import { PassQrModal } from './components/PassQrModal';
 import { SchedulesModal } from './components/SchedulesModal';
 import confetti from 'canvas-confetti';
 
+const roleMapping: Record<string, PortalRole> = {
+  student: 'student',
+  corporate: 'corporate',
+  passenger: 'passenger',
+  college_admin: 'college_admin',
+  prtc_admin: 'prtc_admin',
+};
+
 export default function App() {
   const [currentRole, setCurrentRole] = useState<PortalRole>('gateway');
   const [colleges, setColleges] = useState(mockColleges);
   const [schedules, setSchedules] = useState(mockSchedules);
   const [applications, setApplications] = useState<StudentApplication[]>([]);
-  const [tickets, setTickets] = useState<BusTicket[]>(mockRecentTickets);
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    const savedSession = getStoredSession();
-    return savedSession?.profile || mockUserProfile;
-  });
+  const [tickets, setTickets] = useState<BusTicket[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile>(mockUserProfile);
 
   // Modals
   const [activePassData, setActivePassData] = useState<any | null>(null);
@@ -43,43 +47,71 @@ export default function App() {
   const [isStudentAppModalOpen, setIsStudentAppModalOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
-  // Load persisted backend state. Mock data remains as an offline fallback.
+  // Refresh server-authoritative applications and tickets
+  const loadUserData = () => {
+    api.listApplications()
+      .then((serverApps) => {
+        if (serverApps) setApplications(serverApps);
+      })
+      .catch((err) => console.warn('Could not load applications from server', err));
+
+    api.listTickets()
+      .then((serverTickets) => {
+        if (serverTickets) setTickets(serverTickets);
+      })
+      .catch((err) => console.warn('Could not load tickets from server', err));
+  };
+
+  // Bootstrap public schedules & colleges + Restore verified server session
   useEffect(() => {
     api.bootstrap()
       .then((data) => {
         if (data.colleges?.length) setColleges(data.colleges);
-        if (data.applications?.length) setApplications(data.applications);
-        if (data.tickets?.length) setTickets(data.tickets);
         if (data.schedules?.length) setSchedules(data.schedules);
       })
       .catch((err) => console.warn('Backend unavailable; using bundled demo data.', err));
+
+    const token = localStorage.getItem('prtc_access_token');
+    if (token) {
+      api.me()
+        .then((res) => {
+          if (res?.profile) {
+            setUserProfile(res.profile);
+            const userRole = res.profile.roleType || 'gateway';
+            setCurrentRole(roleMapping[userRole] || 'gateway');
+            saveStoredSession(res.profile, userRole);
+            loadUserData();
+          }
+        })
+        .catch((err) => {
+          console.warn('Session expired or invalid token:', err);
+          localStorage.removeItem('prtc_access_token');
+          localStorage.removeItem('prtc_active_session_v2');
+          setCurrentRole('gateway');
+        });
+    } else {
+      setCurrentRole('gateway');
+    }
   }, []);
-
-  // Load the real applications for the logged-in user (scoped by role on the server)
-  const refreshApplications = () =>
-    api.listApplications().then(setApplications).catch((err) => console.warn('Could not load applications', err));
-
-  useEffect(() => {
-    if (userProfile && localStorage.getItem('prtc_access_token')) refreshApplications();
-  }, [userProfile?.id]);
 
   // Handle Authentication Completion
   const handleAuthSuccess = (profile: UserProfile, targetRole: UserRoleType) => {
     setUserProfile(profile);
     saveStoredSession(profile, targetRole);
     setIsAuthModalOpen(false);
-
-    // Map role type to dashboard view
-    const roleMapping: Record<UserRoleType, PortalRole> = {
-      student: 'student',
-      corporate: 'corporate',
-      passenger: 'passenger',
-      college_admin: 'college_admin',
-      prtc_admin: 'prtc_admin',
-    };
-
     setCurrentRole(roleMapping[targetRole] || 'gateway');
+    loadUserData();
     confetti({ particleCount: 70, spread: 60 });
+  };
+
+  // Sign out / Logout
+  const handleLogout = () => {
+    localStorage.removeItem('prtc_access_token');
+    localStorage.removeItem('prtc_active_session_v2');
+    setUserProfile(mockUserProfile);
+    setApplications([]);
+    setTickets([]);
+    setCurrentRole('gateway');
   };
 
   const handleOpenAuth = (roleType: UserRoleType = 'student') => {
@@ -89,15 +121,21 @@ export default function App() {
 
   // Application Updates (Approved by College or PRTC)
   const handleUpdateApplication = (updatedApp: StudentApplication) => {
+    setApplications((prev) => prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)));
     api.updateApplication(updatedApp)
-      .then((saved) => setApplications((prev) => prev.map((a) => (a.id === saved.id ? saved : a))))
-      .catch((err) => alert(`Could not save: ${err.message}`));
+      .then((saved) => {
+        setApplications((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+      })
+      .catch((err) => console.warn(`Could not sync to backend: ${err.message}`));
   };
 
   const handleNewStudentApplication = (newApp: StudentApplication) => {
+    setApplications((prev) => [newApp, ...prev.filter((a) => a.id !== newApp.id)]);
     api.createApplication(newApp)
-      .then((saved) => setApplications((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)]))
-      .catch((err) => alert(`Could not submit: ${err.message}`));
+      .then((saved) => {
+        setApplications((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)]);
+      })
+      .catch((err) => console.warn(`Could not sync application to backend: ${err.message}`));
   };
 
   // Handle Profile Update Persistence
@@ -110,34 +148,39 @@ export default function App() {
     }
   };
 
-  // Direct Ticket Booking for Passengers
+  // Direct Ticket Booking for Passengers (using verified server route)
   const handleDirectTicketBooking = () => {
     const newTicket: BusTicket = {
       id: `tkt-${Date.now()}`,
       ticketNumber: `PRTC-PB-${Math.floor(10000 + Math.random() * 90000)}`,
-      title: 'Patiala Express HVAC Direct Ticket',
+      title: 'Chandigarh -> Patiala HVAC Direct Ticket',
       type: 'single',
-      route: 'ISBT Sector 43 Chandigarh -> Patiala Bus Stand',
+      route: 'Chandigarh ISBT 43 -> Patiala Bus Stand',
       timestamp: 'Just now',
-      amount: 65.0,
+      amount: 110.0,
       status: 'active',
       validUntil: 'Valid for next 6 Hours',
     };
-    setTickets((prev) => {
-      return [newTicket, ...prev];
-    });
-    api.createTicket(newTicket, userProfile.passId).catch((err) => console.error('Failed to persist ticket', err));
-    confetti({ particleCount: 60, spread: 60 });
-    setActivePassData({
-      ticketNumber: newTicket.ticketNumber,
-      holderName: userProfile.name,
-      title: newTicket.title,
-      passType: 'Direct Ticket',
-      route: newTicket.route,
-      validUntil: 'Active for next 6 hours',
-      college: 'Pepsu Road Transport Corporation',
-      avatarUrl: userProfile.avatarUrl,
-    });
+    api.createTicket(newTicket, userProfile.passId)
+      .then((savedTicket) => {
+        const ticketToDisplay = savedTicket || newTicket;
+        setTickets((prev) => [ticketToDisplay, ...prev.filter((t) => t.id !== ticketToDisplay.id)]);
+        confetti({ particleCount: 60, spread: 60 });
+        setActivePassData({
+          ticketNumber: ticketToDisplay.ticketNumber,
+          holderName: userProfile.name,
+          title: ticketToDisplay.title,
+          passType: 'Direct Ticket',
+          route: ticketToDisplay.route,
+          validUntil: 'Active for next 6 hours',
+          college: 'Pepsu Road Transport Corporation',
+          avatarUrl: userProfile.avatarUrl,
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to persist ticket on server', err);
+        alert(err?.message || 'Failed to book ticket with the server.');
+      });
   };
 
   // Central Gateway Schedule Booking - Redirects to Normal Passenger Login
@@ -155,6 +198,7 @@ export default function App() {
         userProfile={userProfile}
         onOpenAuth={handleOpenAuth}
         onOpenSchedules={() => setIsSchedulesOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Screen Mode Quick Switcher Bar on Top (Sub-header) */}

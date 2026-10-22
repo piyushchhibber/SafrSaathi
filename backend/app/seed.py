@@ -1,7 +1,7 @@
 import sys, json, re
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
-from backend.app.database import Base, engine, SessionLocal
+from backend.app.database import Base, engine, SessionLocal, ensure_columns
 from backend.app.models import College, StudentApplication, Ticket, RouteSchedule, User
 from backend.app.security import hash_password
 
@@ -28,7 +28,9 @@ def apply(obj,p):
         if s in cols and s not in {'id','created_at'}: setattr(obj,s,v)
 
 def run():
-    Base.metadata.create_all(engine); db=SessionLocal()
+    Base.metadata.create_all(engine)
+    ensure_columns()
+    db = SessionLocal()
     try:
         if not db.query(College).count():
             for p in SEED['colleges']:
@@ -39,11 +41,11 @@ def run():
 
         if not db.query(StudentApplication).count():
             apps = [
-                {"id":"app-101","studentId":"STU-2024-8841","name":"Navjot Singh Dhillon","initials":"ND","fatherName":"S. Gurdeep Singh Dhillon","collegeId":"thapar","collegeName":"Thapar Institute of Engg. & Technology","rollNumber":"102203418","course":"B.Tech Computer Science & Engg","semester":"Semester 4 (2024-25)","passType":"Student AC","route":"Patiala Bus Stand -> Nabha Road -> Thapar Campus","distanceKm":18,"duration":"Semester","status":"college_approved","submittedDate":"24 Aug 2026","aadhaarNumber":"7842-9910-4821","aadhaarAddress":"Patiala, Punjab","isPunjabResident":True,"feeReceiptFile":"fee_receipt_navjot_sem4.pdf","feeReceiptNo":"TIET-REC-2026-904","aadhaarFile":"aadhaar_navjot_singh_signed.pdf","signatureAffirmed":True,"originalFare":900,"subsidizedAmountPaid":225},
-                {"id":"app-102","studentId":"STU-2024-5519","name":"Gurleen Kaur Sandhu","initials":"GK","fatherName":"Harpreet Singh Sandhu","collegeId":"pec","collegeName":"Punjab Engineering College (PEC)","rollNumber":"21104019","course":"B.Tech Mechanical Engineering","semester":"Semester 5 (2024-25)","passType":"Student AC","route":"Mohali Phase 7 -> Sector 43 ISBT -> PEC Sector 12","distanceKm":22,"duration":"Semester","status":"approved","submittedDate":"15 Aug 2026","aadhaarNumber":"4451-8890-3321","aadhaarAddress":"Mohali, Punjab","isPunjabResident":True,"feeReceiptFile":"fee_receipt_gurleen_pec.pdf","feeReceiptNo":"PEC-FEES-2026-118","aadhaarFile":"aadhaar_gurleen_signed.pdf","signatureAffirmed":True,"originalFare":1100,"subsidizedAmountPaid":275},
-                {"id":"app-103","studentId":"STU-2024-7712","name":"Amanpreet Verma","initials":"AV","fatherName":"Rajesh Verma","collegeId":"thapar","collegeName":"Thapar Institute of Engg. & Technology","rollNumber":"102305012","course":"B.E. Electronics & Communication","semester":"Semester 3","passType":"Student Non-AC","route":"Rajpura Colony -> Patiala Bus Stand -> Thapar","distanceKm":26,"duration":"Quarterly","status":"pending","submittedDate":"28 Aug 2026","aadhaarNumber":"9901-2241-7789","aadhaarAddress":"Rajpura, Punjab","isPunjabResident":True,"feeReceiptFile":"thapar_feereceipt_aman.pdf","feeReceiptNo":"TIET-REC-2026-871","aadhaarFile":"aadhaar_amanpreet_signed.pdf","signatureAffirmed":True,"originalFare":650,"subsidizedAmountPaid":162.5},
-                {"id":"app-104","studentId":"STU-2024-3320","name":"Harmanjot Singh","initials":"HS","fatherName":"Jagjit Singh","collegeId":"khalsa","collegeName":"Khalsa College","rollNumber":"KC-BBA-045","course":"Bachelor of Business Administration","semester":"Semester 3","passType":"Student Non-AC","route":"Tarn Taran -> Amritsar GT Road Bus Stand","distanceKm":24,"duration":"Semester","status":"college_approved","submittedDate":"22 Aug 2026","aadhaarNumber":"3341-7782-9011","aadhaarAddress":"Tarn Taran, Punjab","isPunjabResident":True,"feeReceiptFile":"fee_receipt_harman.pdf","feeReceiptNo":"KC-FEE-8821","aadhaarFile":"aadhaar_harman_signed.pdf","signatureAffirmed":True,"originalFare":800,"subsidizedAmountPaid":200},
-                {"id":"app-105","studentId":"STU-2024-9041","name":"Mehakpreet Kaur","initials":"MK","fatherName":"Baldev Singh","collegeId":"bikram","collegeName":"Govt. Bikram College of Commerce","rollNumber":"GBCC-BCOM-112","course":"B.Com Honours","semester":"Semester 2","passType":"Student Express","route":"Samana -> Patiala Lower Mall Bus Stop","distanceKm":30,"duration":"Semester","status":"pending","submittedDate":"27 Aug 2026","aadhaarNumber":"5561-3320-1194","aadhaarAddress":"Samana, Punjab","isPunjabResident":True,"feeReceiptFile":"bikram_fees_mehak.pdf","feeReceiptNo":"GBCC-2026-441","aadhaarFile":"aadhaar_mehak_signed.pdf","signatureAffirmed":True,"originalFare":950,"subsidizedAmountPaid":237.5},
+                {"id":"app-101","studentId":"usr-student-01","name":"Navjot Singh Dhillon","initials":"ND","fatherName":"S. Gurdeep Singh Dhillon","collegeId":"thapar","collegeName":"Thapar Institute of Engg. & Technology","rollNumber":"102203418","course":"B.Tech Computer Science & Engg","semester":"Semester 4 (2024-25)","passType":"Student AC","route":"Patiala Bus Stand -> Nabha Road -> Thapar Campus","distanceKm":18,"duration":"Semester","status":"college_approved","submittedDate":"24 Aug 2026","aadhaarNumber":"7842-9910-4821","aadhaarAddress":"Patiala, Punjab","isPunjabResident":True,"feeReceiptFile":"fee_receipt_navjot_sem4.pdf","feeReceiptNo":"TIET-REC-2026-904","aadhaarFile":"aadhaar_navjot_singh_signed.pdf","signatureAffirmed":True,"originalFare":900,"subsidizedAmountPaid":225},
+                {"id":"app-102","studentId":"usr-student-02","name":"Gurleen Kaur Sandhu","initials":"GK","fatherName":"Harpreet Singh Sandhu","collegeId":"pec","collegeName":"Punjab Engineering College (PEC)","rollNumber":"21104019","course":"B.Tech Mechanical Engineering","semester":"Semester 5 (2024-25)","passType":"Student AC","route":"Mohali Phase 7 -> Sector 43 ISBT -> PEC Sector 12","distanceKm":22,"duration":"Semester","status":"approved","submittedDate":"15 Aug 2026","aadhaarNumber":"4451-8890-3321","aadhaarAddress":"Mohali, Punjab","isPunjabResident":True,"feeReceiptFile":"fee_receipt_gurleen_pec.pdf","feeReceiptNo":"PEC-FEES-2026-118","aadhaarFile":"aadhaar_gurleen_signed.pdf","signatureAffirmed":True,"originalFare":1100,"subsidizedAmountPaid":275},
+                {"id":"app-103","studentId":"usr-student-03","name":"Amanpreet Verma","initials":"AV","fatherName":"Rajesh Verma","collegeId":"thapar","collegeName":"Thapar Institute of Engg. & Technology","rollNumber":"102305012","course":"B.E. Electronics & Communication","semester":"Semester 3","passType":"Student Non-AC","route":"Rajpura Colony -> Patiala Bus Stand -> Thapar","distanceKm":26,"duration":"Quarterly","status":"pending","submittedDate":"28 Aug 2026","aadhaarNumber":"9901-2241-7789","aadhaarAddress":"Rajpura, Punjab","isPunjabResident":True,"feeReceiptFile":"thapar_feereceipt_aman.pdf","feeReceiptNo":"TIET-REC-2026-871","aadhaarFile":"aadhaar_amanpreet_signed.pdf","signatureAffirmed":True,"originalFare":650,"subsidizedAmountPaid":162.5},
+                {"id":"app-104","studentId":"usr-student-04","name":"Harmanjot Singh","initials":"HS","fatherName":"Jagjit Singh","collegeId":"khalsa","collegeName":"Khalsa College","rollNumber":"KC-BBA-045","course":"Bachelor of Business Administration","semester":"Semester 3","passType":"Student Non-AC","route":"Tarn Taran -> Amritsar GT Road Bus Stand","distanceKm":24,"duration":"Semester","status":"college_approved","submittedDate":"22 Aug 2026","aadhaarNumber":"3341-7782-9011","aadhaarAddress":"Tarn Taran, Punjab","isPunjabResident":True,"feeReceiptFile":"fee_receipt_harman.pdf","feeReceiptNo":"KC-FEE-8821","aadhaarFile":"aadhaar_harman_signed.pdf","signatureAffirmed":True,"originalFare":800,"subsidizedAmountPaid":200},
+                {"id":"app-105","studentId":"usr-student-05","name":"Mehakpreet Kaur","initials":"MK","fatherName":"Baldev Singh","collegeId":"bikram","collegeName":"Govt. Bikram College of Commerce","rollNumber":"GBCC-BCOM-112","course":"B.Com Honours","semester":"Semester 2","passType":"Student Express","route":"Samana -> Patiala Lower Mall Bus Stop","distanceKm":30,"duration":"Semester","status":"pending","submittedDate":"27 Aug 2026","aadhaarNumber":"5561-3320-1194","aadhaarAddress":"Samana, Punjab","isPunjabResident":True,"feeReceiptFile":"bikram_fees_mehak.pdf","feeReceiptNo":"GBCC-2026-441","aadhaarFile":"aadhaar_mehak_signed.pdf","signatureAffirmed":True,"originalFare":950,"subsidizedAmountPaid":237.5},
             ]
             for p in apps:
                 o=StudentApplication(id=p['id'],student_id=p['studentId'],name=p['name'],initials=p['initials'],college_id=p['collegeId'],college_name=p['collegeName'],roll_number=p['rollNumber'],course=p['course'],semester=p['semester'],pass_type=p['passType'],route=p['route'],status=p['status'],submitted_date=p['submittedDate'],aadhaar_number=p['aadhaarNumber']); apply(o,p); db.add(o)
@@ -56,9 +58,27 @@ def run():
             for p in tickets:
                 o=Ticket(id=p['id'],ticket_number=p['ticketNumber'],title=p['title'],type=p['type'],route=p['route'],timestamp=p['timestamp'],amount=p['amount'],status=p['status']); apply(o,p); db.add(o)
 
-        demo=[('usr-student-01','PRTC-STU-9942','Navjot Singh Dhillon','navjot.dhillon@thapar.edu','student','Thapar Institute of Engg. & Technology'),('usr-corp-01','CORP-INF-8849','Rohit Verma','rohit.verma@infosys.com','corporate','Infosys Limited'),('usr-pass-01','PRTC-COMM-4412','Priya Sharma','priya.sharma22@gmail.com','passenger','Punjab State Transit Commuter'),('usr-college-01','PEC-ADMIN-01','Dr. S. Kapoor','deansw@pec.edu.in','college_admin','Punjab Engineering College (PEC)'),('usr-prtc-01','PRTC-PAT-HQ-091','S. Gurmukh Singh','g.singh@prtc.punjab.gov.in','prtc_admin','Pepsu Road Transport Corporation')]
+        demo=[
+            ('usr-student-01','PRTC-STU-9942','Navjot Singh Dhillon','navjot.dhillon@thapar.edu','student','Thapar Institute of Engg. & Technology',None,None),
+            ('usr-corp-01','CORP-INF-8849','Rohit Verma','rohit.verma@infosys.com','corporate','Infosys Limited',None,None),
+            ('usr-pass-01','PRTC-COMM-4412','Priya Sharma','priya.sharma22@gmail.com','passenger','Punjab State Transit Commuter',None,None),
+            ('usr-college-01','PEC-ADMIN-01','Dr. S. Kapoor','deansw@pec.edu.in','college_admin','Punjab Engineering College (PEC)','pec','Punjab Engineering College (PEC)'),
+            ('usr-prtc-01','PRTC-PAT-HQ-091','S. Gurmukh Singh','g.singh@prtc.punjab.gov.in','prtc_admin','Pepsu Road Transport Corporation',None,None)
+        ]
         if not db.query(User).count():
-            for id,pid,n,e,r,inst in demo: db.add(User(id=id,pass_id=pid,name=n,email=e,phone='',password_hash=hash_password('demo1234'),role_type=r,avatar_url='',institution=inst))
+            for id,pid,n,e,r,inst,cid,cname in demo:
+                db.add(User(id=id,pass_id=pid,name=n,email=e,phone='',password_hash=hash_password('demo1234'),role_type=r,avatar_url='',institution=inst,college_id=cid,college_name=cname))
+
+        # Automatic repair for existing databases (Supabase, local SQLite, Render)
+        pec_admin = db.query(User).filter(User.email == 'deansw@pec.edu.in', User.college_id.is_(None)).first()
+        if pec_admin:
+            pec_admin.college_id = 'pec'
+            pec_admin.college_name = 'Punjab Engineering College (PEC)'
+
+        app101 = db.query(StudentApplication).filter(StudentApplication.id == 'app-101', StudentApplication.student_id != 'usr-student-01').first()
+        if app101:
+            app101.student_id = 'usr-student-01'
+
         db.commit()
     finally: db.close()
 if __name__=='__main__': run()

@@ -65,6 +65,7 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ data: profile }),
     }),
+  me: () => request<{ profile: UserProfile }>('/auth/me'),
 
   // Applications (real data, scoped to the logged-in role by the backend)
   listApplications: () => request<StudentApplication[]>('/applications'),
@@ -87,6 +88,7 @@ export const api = {
       body: JSON.stringify({ token }),
     }),
 
+  listTickets: () => request<BusTicket[]>('/tickets'),
   createTicket: (ticket: BusTicket, ownerPassId?: string) =>
     request<BusTicket>('/tickets', {
       method: 'POST',

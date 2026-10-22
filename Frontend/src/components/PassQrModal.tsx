@@ -13,6 +13,7 @@ interface PassQrModalProps {
     route?: string;
     college?: string;
     validUntil?: string;
+    expiresAt?: string;
     concession?: string;
     amount?: string | number;
     applicationId?: string;
@@ -67,17 +68,49 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     return 6 * 3600; // default 6 hours
   };
 
-  const [secondsRemaining, setSecondsRemaining] = useState(getInitialSeconds);
+  // Calculate remaining seconds from real backend expiration or persist the countdown
+  // so opening/reopening the modal NEVER restarts the timer!
+  const calculateRemainingSeconds = () => {
+    if (passData?.expiresAt) {
+      const expiry = new Date(passData.expiresAt).getTime();
+      const now = Date.now();
+      if (!isNaN(expiry) && expiry > now) {
+        return Math.floor((expiry - now) / 1000);
+      }
+    }
+
+    const passIdentifier = passData?.ticketNumber || passData?.passId || passData?.applicationId;
+    if (passIdentifier) {
+      const storageKey = `pass_timer_expiry_${passIdentifier}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const targetExpiry = parseInt(saved, 10);
+        const now = Date.now();
+        if (!isNaN(targetExpiry) && targetExpiry > now) {
+          return Math.floor((targetExpiry - now) / 1000);
+        }
+      }
+      // If not yet saved, compute and persist target expiration
+      const baseSecs = getInitialSeconds();
+      const targetExpiry = Date.now() + baseSecs * 1000;
+      try {
+        localStorage.setItem(storageKey, targetExpiry.toString());
+      } catch {}
+      return baseSecs;
+    }
+
+    return getInitialSeconds();
+  };
+
+  const [secondsRemaining, setSecondsRemaining] = useState(calculateRemainingSeconds);
 
   useEffect(() => {
-    // Reset timer to exact duration every time passData opens
-    setSecondsRemaining(getInitialSeconds());
-    
+    setSecondsRemaining(calculateRemainingSeconds());
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
-  }, [passData]);
+  }, [passData?.ticketNumber, passData?.passId, passData?.applicationId, passData?.expiresAt]);
 
   // Real signed QR code (issued by the backend after final PRTC approval)
   const [realQr, setRealQr] = useState<string | null>(null);
@@ -96,7 +129,16 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     api
       .passQr(passData.applicationId)
       .then((r) => {
-        if (!cancelled) setRealQr(r.qrCodeDataUrl);
+        if (!cancelled) {
+          setRealQr(r.qrCodeDataUrl);
+          if (r.expiresAt) {
+            const expiry = new Date(r.expiresAt).getTime();
+            const now = Date.now();
+            if (!isNaN(expiry) && expiry > now) {
+              setSecondsRemaining(Math.floor((expiry - now) / 1000));
+            }
+          }
+        }
       })
       .catch((e) => {
         if (!cancelled) setQrError(e.message || 'QR could not be loaded');

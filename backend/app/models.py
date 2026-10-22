@@ -80,6 +80,8 @@ class StudentApplication(Base):
     signature_affirmed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     subsidized_amount_paid: Mapped[float | None] = mapped_column(Float, nullable=True)
     original_fare: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pass_issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    pass_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class Ticket(Base):

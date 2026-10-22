@@ -48,6 +48,8 @@ export interface StudentApplication {
   signatureAffirmed?: boolean;
   subsidizedAmountPaid?: number;
   originalFare?: number;
+  passIssuedAt?: string;
+  passExpiresAt?: string;
 }
 
 export interface College {

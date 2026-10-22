@@ -8,6 +8,7 @@ interface HeaderProps {
   userProfile: UserProfile;
   onOpenAuth: (roleType?: UserRoleType) => void;
   onOpenSchedules: () => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   userProfile,
   onOpenAuth,
   onOpenSchedules,
+  onLogout,
 }) => {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -160,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <span className="font-bold text-[#1b1c1c]">Phone:</span> {userProfile.phone}
                 </div>
               </div>
-              <div className="pt-2 border-t border-[#eae8e7]">
+              <div className="pt-2 border-t border-[#eae8e7] space-y-1.5">
                 <button
                   onClick={() => {
                     onOpenAuth();
@@ -170,6 +172,17 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   Switch Role Login
                 </button>
+                {onLogout && (
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setProfileOpen(false);
+                    }}
+                    className="w-full text-center py-2 text-xs font-extrabold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-xl transition"
+                  >
+                    Sign Out
+                  </button>
+                )}
               </div>
             </div>
           )}

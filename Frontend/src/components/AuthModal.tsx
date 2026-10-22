@@ -74,6 +74,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [otpError, setOtpError] = useState<string | null>(null);
   const [targetPhone, setTargetPhone] = useState<string>('');
   const [resendTimer, setResendTimer] = useState<number>(30);
+  const [isVerifying, setIsVerifying] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
@@ -132,12 +133,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setOtpStep(true);
   };
 
-  const handleVerifyOtp = async (e?: React.FormEvent) => {
+  const handleVerifyOtp = async (e?: React.FormEvent, digitsOverride?: string[]) => {
     if (e) e.preventDefault();
-    const entered = otpDigits.join('');
+    if (isVerifying) return;
+    const entered = (digitsOverride ?? otpDigits).join('');
     if (entered === '0000') {
       setOtpError(null);
       if (pendingProfile && pendingRole) {
+        setIsVerifying(true);
         try {
           const passwordByRole: Record<UserRoleType, string> = {
             student: studentPassword,
@@ -152,12 +155,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             isSignUp ? 'register' : 'login'
           );
           localStorage.setItem('prtc_access_token', result.accessToken);
-          confetti({ particleCount: 70, spread: 60 });
           fireSuccess(result.profile, pendingRole);
+          confetti({ particleCount: 70, spread: 60 });
           setOtpStep(false);
           onClose();
         } catch (err: any) {
-          setOtpError(err?.message || 'Authentication failed.');
+          setOtpError(err?.message || 'Authentication failed. Please check credentials or try again.');
+        } finally {
+          setIsVerifying(false);
         }
       }
     } else {
@@ -177,6 +182,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const nextInput = document.getElementById(`otp-box-${index + 1}`);
       if (nextInput) nextInput.focus();
     }
+
+    // Auto-verify if all 4 digits are completed safely
+    if (newDigits.every(Boolean)) {
+      handleVerifyOtp(undefined, newDigits);
+    }
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -187,8 +197,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleAutoFillOtp = () => {
-    setOtpDigits(['0', '0', '0', '0']);
+    const zeros = ['0', '0', '0', '0'];
+    setOtpDigits(zeros);
     setOtpError(null);
+    handleVerifyOtp(undefined, zeros);
   };
 
 
@@ -551,10 +563,11 @@ if (!isOpen) return null;
 
                 <button
                   type="submit"
-                  className="w-full bg-[#000666] hover:bg-[#1a237e] text-white py-3.5 rounded-xl font-black text-xs transition shadow-md flex items-center justify-center gap-2"
+                  disabled={isVerifying}
+                  className="w-full bg-[#000666] hover:bg-[#1a237e] disabled:opacity-50 text-white py-3.5 rounded-xl font-black text-xs transition shadow-md flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined text-base">verified</span>
-                  Verify OTP & Proceed
+                  {isVerifying ? 'Signing you in…' : 'Verify OTP & Proceed'}
                 </button>
 
                 <div className="flex items-center justify-between text-xs text-[#767683] pt-2">
