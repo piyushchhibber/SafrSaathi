@@ -153,6 +153,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     applicationId: myApp?.id,
     qrCodeDataUrl,
     expiresAt: qrExpiresAt || myApp?.passExpiresAt,
+    duration: myApp?.duration,
   };
 
   const Avatar: React.FC<{ className: string }> = ({ className }) =>

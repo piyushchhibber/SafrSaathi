@@ -627,15 +627,24 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
     now = datetime.now(timezone.utc)
     if not application.pass_issued_at:
         application.pass_issued_at = now
-    if not application.pass_expires_at:
-        base_issued = application.pass_issued_at
-        if base_issued and base_issued.tzinfo is None:
-            base_issued = base_issued.replace(tzinfo=timezone.utc)
-        application.pass_expires_at = (base_issued or now) + timedelta(days=days)
+
+    base_issued = application.pass_issued_at
+    if base_issued and base_issued.tzinfo is None:
+        base_issued = base_issued.replace(tzinfo=timezone.utc)
+
+    expected_expiry = (base_issued or now) + timedelta(days=days)
+    current_expiry = application.pass_expires_at
+    if current_expiry and current_expiry.tzinfo is None:
+        current_expiry = current_expiry.replace(tzinfo=timezone.utc)
+
+    if not current_expiry or abs((current_expiry - expected_expiry).total_seconds()) > 86400 * 2:
+        application.pass_expires_at = expected_expiry
         db.commit()
         db.refresh(application)
+        expires_at = expected_expiry
+    else:
+        expires_at = current_expiry
 
-    expires_at = application.pass_expires_at or (now + timedelta(days=days))
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
 

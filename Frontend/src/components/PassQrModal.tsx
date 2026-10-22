@@ -18,6 +18,7 @@ interface PassQrModalProps {
     amount?: string | number;
     applicationId?: string;
     qrCodeDataUrl?: string | null;
+    duration?: string;
   } | null;
   onClose: () => void;
 }
@@ -53,18 +54,44 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     !isDirectTicket && !isOneDayPass && !isCorporatePass && (
       (passData?.passType && passData.passType.toLowerCase().includes('student')) ||
       (passData?.title && passData.title.toLowerCase().includes('student')) ||
-      (passData?.passId && (passData.passId.startsWith('PRTC-STU') || passData.passId.startsWith('STU-'))) ||
-      (passData?.ticketNumber && (passData.ticketNumber.startsWith('PRTC-STU') || passData.ticketNumber.startsWith('STU-'))) ||
+      (passData?.passId && (passData.passId.startsWith('PRTC-STU') || passData.passId.startsWith('STU-') || passData.passId.startsWith('app-'))) ||
+      (passData?.ticketNumber && (passData.ticketNumber.startsWith('PRTC-STU') || passData.ticketNumber.startsWith('STU-') || passData.ticketNumber.startsWith('app-'))) ||
+      Boolean(passData?.applicationId) ||
       (passData?.concession && passData.concession.toLowerCase().includes('student')) ||
       Boolean(passData?.college && !passData?.college.includes('PRTC Punjab') && !passData?.college.includes('Pepsu Road'))
     )
   );
 
+  const studentDuration = (() => {
+    if (passData?.duration) {
+      const d = passData.duration.toLowerCase();
+      if (d.includes('sem') || d.includes('6')) return 'Semester';
+      if (d.includes('month') && !d.includes('3')) return 'Monthly';
+      return 'Quarterly';
+    }
+    const vu = (passData?.validUntil || '').toLowerCase();
+    const t = (passData?.title || '').toLowerCase();
+    if (vu.includes('sem') || vu.includes('6') || t.includes('sem')) return 'Semester';
+    if ((vu.includes('1 month') || vu.includes('30 day')) && !vu.includes('3')) return 'Monthly';
+    if (vu.includes('3 month') || vu.includes('quarter') || vu.includes('90')) return 'Quarterly';
+    if (passData?.expiresAt) {
+      const ms = new Date(passData.expiresAt).getTime() - Date.now();
+      const days = ms / (1000 * 86400);
+      if (days > 100) return 'Semester';
+      if (days <= 35) return 'Monthly';
+    }
+    return 'Quarterly';
+  })();
+
   const getInitialSeconds = () => {
     if (isDirectTicket) return 6 * 3600; // 6 hours for direct bus ticket
     if (isOneDayPass) return 24 * 3600; // 24 hours (1 day) for One-Day Pass
     if (isCorporatePass) return 30 * 24 * 3600; // 1 month (30 days) for Corporate Pass
-    if (isStudentPass) return 90 * 24 * 3600; // 3 months (90 days) for Student Concession Pass
+    if (isStudentPass) {
+      if (studentDuration === 'Semester') return 180 * 24 * 3600;
+      if (studentDuration === 'Monthly') return 30 * 24 * 3600;
+      return 90 * 24 * 3600; // 3 months (90 days) for Quarterly Concession Pass
+    }
     return 6 * 3600; // default 6 hours
   };
 
@@ -136,6 +163,12 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
             const now = Date.now();
             if (!isNaN(expiry) && expiry > now) {
               setSecondsRemaining(Math.floor((expiry - now) / 1000));
+              const passIdentifier = passData?.ticketNumber || passData?.passId || passData?.applicationId;
+              if (passIdentifier) {
+                try {
+                  localStorage.setItem(`pass_timer_expiry_${passIdentifier}`, expiry.toString());
+                } catch {}
+              }
             }
           }
         }
@@ -175,7 +208,11 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     passData.passType ||
     passData.title ||
     (isStudentPass
-      ? 'Subsidized Student Pass (3 Months)'
+      ? studentDuration === 'Semester'
+        ? 'Subsidized Student Pass (Semester)'
+        : studentDuration === 'Monthly'
+        ? 'Subsidized Student Pass (1 Month)'
+        : 'Subsidized Student Pass (3 Months)'
       : isCorporatePass
       ? 'Corporate Executive Pass (1 Month)'
       : isOneDayPass
@@ -183,7 +220,11 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
       : 'Direct Express Ticket (6 Hours)');
   const displayRoute = passData.route || 'All Punjab Regional Transit Corridors';
   const displayValidity = isStudentPass
-    ? '3 Months (Quarterly Concession Valid)'
+    ? studentDuration === 'Semester'
+      ? '6 Months (Semester Concession Valid)'
+      : studentDuration === 'Monthly'
+      ? '1 Month (Monthly Concession Valid)'
+      : '3 Months (Quarterly Concession Valid)'
     : isCorporatePass
     ? '1 Month (Corporate Pass Valid)'
     : isOneDayPass
@@ -191,7 +232,11 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     : '6 Hours (Single Journey Valid)';
 
   const timerTitle = isStudentPass
-    ? '3-Month Pass Countdown'
+    ? studentDuration === 'Semester'
+      ? 'Semester (6-Month) Pass Countdown'
+      : studentDuration === 'Monthly'
+      ? '1-Month Pass Countdown'
+      : '3-Month Pass Countdown'
     : isCorporatePass
     ? '1-Month Pass Countdown'
     : isOneDayPass
@@ -199,7 +244,11 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     : '6-Hour Ticket Countdown';
 
   const statusBadgeText = isStudentPass
-    ? '3 MONTHS ACTIVE'
+    ? studentDuration === 'Semester'
+      ? '6 MONTHS ACTIVE'
+    : studentDuration === 'Monthly'
+    ? '1 MONTH ACTIVE'
+    : '3 MONTHS ACTIVE'
     : isCorporatePass
     ? '1 MONTH ACTIVE'
     : isOneDayPass
@@ -207,7 +256,11 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     : '6 HOURS VALID';
 
   const statusSubtext = isStudentPass
-    ? 'Quarterly Concession'
+    ? studentDuration === 'Semester'
+      ? 'Semester Concession (180 Days)'
+      : studentDuration === 'Monthly'
+      ? 'Monthly Concession (30 Days)'
+      : 'Quarterly Concession (90 Days)'
     : isCorporatePass
     ? 'Monthly Corporate Pass'
     : isOneDayPass
