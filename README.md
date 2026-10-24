@@ -82,6 +82,16 @@ npm run dev
 
 Set `VITE_API_URL` to the backend API URL, then open the address printed by Vite.
 
+## ☁️ Production deployment
+
+The Render service requires a persistent PostgreSQL database. Create a Supabase
+PostgreSQL project and set its connection string as Render's `DATABASE_URL`.
+Also set `CORS_ORIGINS` to the exact Vercel frontend URL (for example,
+`https://safrsaathi.vercel.app`). The included `render.yaml` marks both values
+as required secrets. The API intentionally refuses to start in production when
+`DATABASE_URL` is missing, preventing silent data loss from an ephemeral SQLite
+database.
+
 ## 🔐 Security
 
 * Passwords are hashed using PBKDF2.

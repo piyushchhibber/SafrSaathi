@@ -34,10 +34,11 @@ local_development_origins = {
     "https://safrsaathi.vercel.app",
 }
 origins = sorted(set(configured_origins) | local_development_origins)
+origin_regex = os.getenv("CORS_ORIGIN_REGEX", "").strip() or None
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app"),
+    allow_origin_regex=origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -625,8 +626,10 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
 
     days = PASS_DURATION_DAYS.get(getattr(application, "duration", None) or "", 30)
     now = datetime.now(timezone.utc)
+    changed = False
     if not application.pass_issued_at:
         application.pass_issued_at = now
+        changed = True
 
     base_issued = application.pass_issued_at
     if base_issued and base_issued.tzinfo is None:
@@ -639,11 +642,15 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
 
     if not current_expiry or abs((current_expiry - expected_expiry).total_seconds()) > 86400 * 2:
         application.pass_expires_at = expected_expiry
+        changed = True
+
+    # Persist the original issue moment and its derived expiry together.  The
+    # pair is the source of truth across logins, browser reloads and QR refreshes.
+    if changed:
         db.commit()
         db.refresh(application)
-        expires_at = expected_expiry
-    else:
-        expires_at = current_expiry
+
+    expires_at = application.pass_expires_at or expected_expiry
 
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)

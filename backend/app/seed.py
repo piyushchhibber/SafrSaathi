@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta, timezone
 import sys, json, re
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -81,19 +80,6 @@ def run():
         if pec_admin:
             pec_admin.college_id = 'pec'
             pec_admin.college_name = 'Punjab Engineering College (PEC)'
-
-        app101 = db.query(StudentApplication).filter(StudentApplication.id == 'app-101').first()
-        if app101:
-            if app101.student_id != 'usr-student-01':
-                app101.student_id = 'usr-student-01'
-            app101.duration = 'Quarterly'
-            now = datetime.now(timezone.utc)
-            if not app101.pass_issued_at:
-                app101.pass_issued_at = now
-            base_issued = app101.pass_issued_at
-            if base_issued and base_issued.tzinfo is None:
-                base_issued = base_issued.replace(tzinfo=timezone.utc)
-            app101.pass_expires_at = (base_issued or now) + timedelta(days=90)
 
         db.commit()
     finally: db.close()

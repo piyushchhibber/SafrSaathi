@@ -106,6 +106,11 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
       }
     }
 
+    // A student application must receive its expiry from the server.  Starting
+    // a browser-only countdown here would make an approved pass appear renewed
+    // after a reload if the QR response is still loading.
+    if (passData?.applicationId) return 0;
+
     const passIdentifier = passData?.ticketNumber || passData?.passId || passData?.applicationId;
     if (passIdentifier) {
       const storageKey = `pass_timer_expiry_${passIdentifier}`;
@@ -137,7 +142,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
       setSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
-  }, [passData?.ticketNumber, passData?.passId, passData?.applicationId, passData?.expiresAt]);
+  }, [passData?.ticketNumber, passData?.passId, passData?.applicationId, passData?.expiresAt, passData?.duration]);
 
   // Real signed QR code (issued by the backend after final PRTC approval)
   const [realQr, setRealQr] = useState<string | null>(null);

@@ -42,10 +42,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onOpenApplicationModal,
   onOpenEditProfile,
 }) => {
-  // Find the current student's application: match by id first, name only if the app has no studentId
+  // Applications created before the current API used a pass ID as `studentId`,
+  // while new applications use the immutable user ID.  Accept either form so
+  // an approved pass remains visible after a fresh login/session restore.
   const myApp: StudentApplication | undefined = (applications || []).find((app) => {
     if (!app) return false;
-    if (app.studentId && userProfile?.id) return app.studentId === userProfile.id;
+    if (app.studentId) {
+      return app.studentId === userProfile?.id || app.studentId === userProfile?.passId;
+    }
     return (
       !!app.name &&
       !!userProfile?.name &&
@@ -137,7 +141,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const collegeLabel =
     userProfile?.college || userProfile?.institution || myApp?.collegeName || 'College not set';
   const rollLabel = userProfile?.rollNo || myApp?.rollNumber || '—';
-  const passIdLabel = userProfile?.passId || (isApproved ? myApp?.id : undefined) || 'Not issued';
+  const passIdLabel =
+    userProfile?.passId ||
+    (myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
+    (isApproved ? myApp?.id : undefined) ||
+    'Not issued';
   const validityLabel = (myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '—';
 
   const virtualPassData = {
