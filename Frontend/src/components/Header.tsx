@@ -6,6 +6,7 @@ interface HeaderProps {
   currentRole: PortalRole;
   setCurrentRole: (role: PortalRole) => void;
   userProfile: UserProfile;
+  isAuthenticated?: boolean;
   onOpenAuth: (roleType?: UserRoleType) => void;
   onOpenSchedules: () => void;
   onLogout?: () => void;
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentRole,
   setCurrentRole,
   userProfile,
+  isAuthenticated = false,
   onOpenAuth,
   onOpenSchedules,
   onLogout,
@@ -79,7 +81,9 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="material-symbols-outlined text-sm text-[#000666]">sync_alt</span>
             <span className="hidden sm:inline">Role View:</span>
             <span className="font-extrabold text-[#000666]">
-              {roleOptions.find((r) => r.key === currentRole)?.badge || 'Portals'}
+              {isAuthenticated && userProfile.roleType
+                ? roleOptions.find((r) => r.key === (userProfile.roleType as PortalRole))?.badge || 'Logged In'
+                : 'Portals'}
             </span>
             <span className="material-symbols-outlined text-xs">arrow_drop_down</span>
           </button>
@@ -94,8 +98,17 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     key={opt.key}
                     onClick={() => {
-                      setCurrentRole(opt.key);
                       setRoleMenuOpen(false);
+                      if (opt.key === 'gateway') {
+                        setCurrentRole('gateway');
+                        return;
+                      }
+                      const reqRole = opt.key as UserRoleType;
+                      if (!isAuthenticated || userProfile.roleType !== reqRole) {
+                        onOpenAuth(reqRole);
+                      } else {
+                        setCurrentRole(opt.key);
+                      }
                     }}
                     className={`w-full text-left px-3.5 py-2.5 flex items-start gap-3 hover:bg-[#f5f3f3] transition ${
                       currentRole === opt.key ? 'bg-blue-50 font-bold text-[#000666]' : 'text-[#1b1c1c]'

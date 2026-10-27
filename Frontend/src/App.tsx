@@ -10,6 +10,7 @@ import { api } from './utils/api';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { CentralGateway } from './components/CentralGateway';
+import { RoleGate } from './components/RoleGate';
 import { StudentDashboard } from './components/StudentDashboard';
 import { CorporateDashboard } from './components/CorporateDashboard';
 import { PassengerDashboard } from './components/PassengerDashboard';
@@ -38,6 +39,7 @@ export default function App() {
   const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [tickets, setTickets] = useState<BusTicket[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>(mockUserProfile);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(Boolean(localStorage.getItem('prtc_access_token')));
 
   // Modals
   const [activePassData, setActivePassData] = useState<any | null>(null);
@@ -77,6 +79,7 @@ export default function App() {
         .then((res) => {
           if (res?.profile) {
             setUserProfile(res.profile);
+            setIsAuthenticated(true);
             const userRole = res.profile.roleType || 'gateway';
             setCurrentRole(roleMapping[userRole] || 'gateway');
             saveStoredSession(res.profile, userRole);
@@ -87,9 +90,11 @@ export default function App() {
           console.warn('Session expired or invalid token:', err);
           localStorage.removeItem('prtc_access_token');
           localStorage.removeItem('prtc_active_session_v2');
+          setIsAuthenticated(false);
           setCurrentRole('gateway');
         });
     } else {
+      setIsAuthenticated(false);
       setCurrentRole('gateway');
     }
   }, []);
@@ -97,6 +102,7 @@ export default function App() {
   // Handle Authentication Completion
   const handleAuthSuccess = (profile: UserProfile, targetRole: UserRoleType) => {
     setUserProfile(profile);
+    setIsAuthenticated(true);
     saveStoredSession(profile, targetRole);
     setIsAuthModalOpen(false);
     setCurrentRole(roleMapping[targetRole] || 'gateway');
@@ -108,6 +114,7 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem('prtc_access_token');
     localStorage.removeItem('prtc_active_session_v2');
+    setIsAuthenticated(false);
     setUserProfile(mockUserProfile);
     setApplications([]);
     setTickets([]);
@@ -196,6 +203,7 @@ export default function App() {
         currentRole={currentRole}
         setCurrentRole={setCurrentRole}
         userProfile={userProfile}
+        isAuthenticated={isAuthenticated}
         onOpenAuth={handleOpenAuth}
         onOpenSchedules={() => setIsSchedulesOpen(true)}
         onLogout={handleLogout}
@@ -220,7 +228,18 @@ export default function App() {
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setCurrentRole(tab.id as PortalRole)}
+                  onClick={() => {
+                    if (tab.id === 'gateway') {
+                      setCurrentRole('gateway');
+                      return;
+                    }
+                    const reqRole = tab.id as UserRoleType;
+                    if (!isAuthenticated || userProfile.roleType !== reqRole) {
+                      handleOpenAuth(reqRole);
+                    } else {
+                      setCurrentRole(tab.id as PortalRole);
+                    }
+                  }}
                   className={`px-3 py-1 rounded-xl font-bold transition ${
                     currentRole === tab.id
                       ? 'bg-[#000666] text-white shadow-xs'
@@ -252,73 +271,125 @@ export default function App() {
           <CentralGateway
             onOpenAuth={handleOpenAuth}
             onOpenSchedules={() => setIsSchedulesOpen(true)}
+            currentRoleType={isAuthenticated ? userProfile?.roleType : undefined}
+            onNavigateToRole={(role) => setCurrentRole(roleMapping[role] || 'gateway')}
           />
         )}
 
         {/* 2. STUDENT DASHBOARD */}
         {currentRole === 'student' && (
-          <StudentDashboard
-            userProfile={userProfile}
-            applications={applications}
-            colleges={colleges}
-            onOpenPassModal={(passData) => setActivePassData(passData)}
-            onOpenApplicationModal={() => setIsStudentAppModalOpen(true)}
-            onOpenEditProfile={() => setIsEditProfileOpen(true)}
-          />
+          !isAuthenticated || userProfile.roleType !== 'student' ? (
+            <RoleGate
+              requiredRole="student"
+              userProfile={userProfile}
+              isAuthenticated={isAuthenticated}
+              onOpenAuth={handleOpenAuth}
+              onBackToAllowedPortal={() => setCurrentRole(roleMapping[userProfile.roleType] || 'gateway')}
+            />
+          ) : (
+            <StudentDashboard
+              userProfile={userProfile}
+              applications={applications}
+              colleges={colleges}
+              onOpenPassModal={(passData) => setActivePassData(passData)}
+              onOpenApplicationModal={() => setIsStudentAppModalOpen(true)}
+              onOpenEditProfile={() => setIsEditProfileOpen(true)}
+            />
+          )
         )}
 
         {/* 3. CORPORATE DASHBOARD */}
         {currentRole === 'corporate' && (
-          <CorporateDashboard
-            userProfile={userProfile}
-            onOpenPassModal={(passData) => setActivePassData(passData)}
-            onOpenEditProfile={() => setIsEditProfileOpen(true)}
-          />
+          !isAuthenticated || userProfile.roleType !== 'corporate' ? (
+            <RoleGate
+              requiredRole="corporate"
+              userProfile={userProfile}
+              isAuthenticated={isAuthenticated}
+              onOpenAuth={handleOpenAuth}
+              onBackToAllowedPortal={() => setCurrentRole(roleMapping[userProfile.roleType] || 'gateway')}
+            />
+          ) : (
+            <CorporateDashboard
+              userProfile={userProfile}
+              onOpenPassModal={(passData) => setActivePassData(passData)}
+              onOpenEditProfile={() => setIsEditProfileOpen(true)}
+            />
+          )
         )}
 
         {/* 4. PASSENGER DASHBOARD */}
         {currentRole === 'passenger' && (
-          <PassengerDashboard
-            userProfile={userProfile}
-            tickets={tickets}
-            onUpdateUserProfile={setUserProfile}
-            onNavigateRole={(role) => setCurrentRole(role)}
-            onOpenTicketModal={(t) =>
-              setActivePassData({
-                ticketNumber: t.ticketNumber,
-                holderName: userProfile.name,
-                title: t.title,
-                route: t.route,
-                validUntil: t.validUntil || 'Active',
-                college: 'PRTC Punjab State Transport',
-                avatarUrl: userProfile.avatarUrl,
-              })
-            }
-            onBuyDirectTicket={handleDirectTicketBooking}
-          />
+          !isAuthenticated || userProfile.roleType !== 'passenger' ? (
+            <RoleGate
+              requiredRole="passenger"
+              userProfile={userProfile}
+              isAuthenticated={isAuthenticated}
+              onOpenAuth={handleOpenAuth}
+              onBackToAllowedPortal={() => setCurrentRole(roleMapping[userProfile.roleType] || 'gateway')}
+            />
+          ) : (
+            <PassengerDashboard
+              userProfile={userProfile}
+              tickets={tickets}
+              onUpdateUserProfile={setUserProfile}
+              onNavigateRole={(role) => setCurrentRole(role)}
+              onOpenTicketModal={(t) =>
+                setActivePassData({
+                  ticketNumber: t.ticketNumber,
+                  holderName: userProfile.name,
+                  title: t.title,
+                  route: t.route,
+                  validUntil: t.validUntil || 'Active',
+                  college: 'PRTC Punjab State Transport',
+                  avatarUrl: userProfile.avatarUrl,
+                })
+              }
+              onBuyDirectTicket={handleDirectTicketBooking}
+            />
+          )
         )}
 
         {/* 5. COLLEGE ADMIN DASHBOARD */}
         {currentRole === 'college_admin' && (
-          <CollegeAdminDashboard
-            userProfile={userProfile}
-            colleges={colleges}
-            applications={applications}
-            onUpdateApplication={handleUpdateApplication}
-            onOpenEditProfile={() => setIsEditProfileOpen(true)}
-          />
+          !isAuthenticated || userProfile.roleType !== 'college_admin' ? (
+            <RoleGate
+              requiredRole="college_admin"
+              userProfile={userProfile}
+              isAuthenticated={isAuthenticated}
+              onOpenAuth={handleOpenAuth}
+              onBackToAllowedPortal={() => setCurrentRole(roleMapping[userProfile.roleType] || 'gateway')}
+            />
+          ) : (
+            <CollegeAdminDashboard
+              userProfile={userProfile}
+              colleges={colleges}
+              applications={applications}
+              onUpdateApplication={handleUpdateApplication}
+              onOpenEditProfile={() => setIsEditProfileOpen(true)}
+            />
+          )
         )}
 
         {/* 6. PRTC ADMIN DASHBOARD */}
         {currentRole === 'prtc_admin' && (
-          <PrtcAdminDashboard
-            userProfile={userProfile}
-            colleges={colleges}
-            applications={applications}
-            onUpdateApplication={handleUpdateApplication}
-            onOpenEditProfile={() => setIsEditProfileOpen(true)}
-            onOpenPassModal={(passData) => setActivePassData(passData)}
-          />
+          !isAuthenticated || userProfile.roleType !== 'prtc_admin' ? (
+            <RoleGate
+              requiredRole="prtc_admin"
+              userProfile={userProfile}
+              isAuthenticated={isAuthenticated}
+              onOpenAuth={handleOpenAuth}
+              onBackToAllowedPortal={() => setCurrentRole(roleMapping[userProfile.roleType] || 'gateway')}
+            />
+          ) : (
+            <PrtcAdminDashboard
+              userProfile={userProfile}
+              colleges={colleges}
+              applications={applications}
+              onUpdateApplication={handleUpdateApplication}
+              onOpenEditProfile={() => setIsEditProfileOpen(true)}
+              onOpenPassModal={(passData) => setActivePassData(passData)}
+            />
+          )
         )}
 
         {/* 7. ONE DAY PASS VIEW */}

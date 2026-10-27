@@ -5,9 +5,16 @@ import { SafrSaathiLogo } from './SafrSaathiLogo';
 interface CentralGatewayProps {
   onOpenAuth: (roleType: UserRoleType) => void;
   onOpenSchedules: () => void;
+  currentRoleType?: UserRoleType;
+  onNavigateToRole?: (role: UserRoleType) => void;
 }
 
-export const CentralGateway: React.FC<CentralGatewayProps> = ({ onOpenAuth, onOpenSchedules }) => {
+export const CentralGateway: React.FC<CentralGatewayProps> = ({
+  onOpenAuth,
+  onOpenSchedules,
+  currentRoleType,
+  onNavigateToRole,
+}) => {
   const loginRoles: {
     id: UserRoleType;
     title: string;
@@ -156,7 +163,13 @@ export const CentralGateway: React.FC<CentralGatewayProps> = ({ onOpenAuth, onOp
           {loginRoles.map((role) => (
             <div
               key={role.id}
-              onClick={() => onOpenAuth(role.id)}
+              onClick={() => {
+                if (currentRoleType === role.id && onNavigateToRole) {
+                  onNavigateToRole(role.id);
+                } else {
+                  onOpenAuth(role.id);
+                }
+              }}
               className={`rounded-3xl border transition-all duration-300 p-5 flex flex-col items-center text-center relative overflow-hidden group cursor-pointer hover:-translate-y-1.5 shadow-xs hover:shadow-xl ${
                 role.isDarkSecondary
                   ? 'bg-[#f5f3f3] border-[#c6c5d4]'
@@ -209,7 +222,7 @@ export const CentralGateway: React.FC<CentralGatewayProps> = ({ onOpenAuth, onOp
                     : 'bg-[#1a237e] text-white hover:bg-[#000666]'
                 }`}
               >
-                <span>{role.buttonText}</span>
+                <span>{currentRoleType === role.id ? `Open ${role.title}` : role.buttonText}</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
             </div>
