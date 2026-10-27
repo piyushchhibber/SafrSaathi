@@ -151,7 +151,7 @@ export const SafrSaathiLogo: React.FC<SafrSaathiLogoProps> = ({
             <span className="text-[#E87722] ml-0.5">Saathi</span>
           </div>
           <div className={`text-[11px] font-black tracking-[0.2em] uppercase mt-1 ${dark ? 'text-[#bdc2ff]' : 'text-[#1B365D]'}`}>
-            by PRTC
+            by CEC-CGC
           </div>
         </div>
       </div>
@@ -168,7 +168,7 @@ export const SafrSaathiLogo: React.FC<SafrSaathiLogoProps> = ({
             <span className="text-[#E87722] ml-0.5">Saathi</span>
           </div>
           <div className="text-[9px] font-black tracking-[0.2em] uppercase text-[#1B365D] mt-0.5">
-            by PRTC
+            by CEC-CGC
           </div>
         </div>
       </div>
@@ -188,7 +188,7 @@ export const SafrSaathiLogo: React.FC<SafrSaathiLogoProps> = ({
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className={`text-[10px] sm:text-[11px] font-black tracking-[0.15em] uppercase ${dark ? 'text-[#bdc2ff]' : 'text-[#1B365D]'}`}>
-            by PRTC
+            by CEC-CGC
           </span>
           <span className="text-[9px] font-bold bg-[#eae8e7] text-[#454652] px-1.5 py-0.2 rounded-md border border-[#c6c5d4] hidden sm:inline-block">
             Punjab Transit

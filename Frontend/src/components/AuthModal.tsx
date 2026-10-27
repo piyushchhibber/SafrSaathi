@@ -41,6 +41,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialRoleType || initialRole || 'student');
+      setIsSignUp(false);
+      setOtpStep(false);
+      setOtpError(null);
       setPunjabError(null);
     }
   }, [isOpen, initialRole, initialRoleType]);
@@ -149,10 +152,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             college_admin: collegeAdminPin,
             prtc_admin: prtcPassword,
           };
+          const isRegisterMode = isSignUp && (pendingRole === 'student' || pendingRole === 'corporate' || pendingRole === 'passenger');
           const result = await api.authenticateProfile(
             pendingProfile,
             passwordByRole[pendingRole] || 'demo1234',
-            isSignUp ? 'register' : 'login'
+            isRegisterMode ? 'register' : 'login'
           );
           localStorage.setItem('prtc_access_token', result.accessToken);
           fireSuccess(result.profile, pendingRole);
@@ -474,7 +478,9 @@ if (!isOpen) return null;
                 key={tab.id}
                 onClick={() => {
                   setActiveTab(tab.id as UserRoleType);
+                  setIsSignUp(false);
                   setPunjabError(null);
+                  setOtpError(null);
                 }}
                 className={`py-2 px-1 rounded-xl text-[11px] font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 ${
                   activeTab === tab.id
