@@ -261,52 +261,59 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       triggerOtpVerification(newProfile, 'student', studentPhone || '+91 98145 67210');
     } else {
       // Default / Sign In
+      const trimmedInput = studentEmail.trim();
+      const isDemo = !trimmedInput;
+      const isPassId = trimmedInput.toUpperCase().startsWith('PRTC-STU');
       const existing: UserProfile = {
-        name: studentEmail.split('@')[0] ? studentEmail.split('@')[0].toUpperCase() : 'Navjot Singh Dhillon',
-        passId: 'PRTC-STU-9942',
-        email: studentEmail || 'navjot.dhillon@thapar.edu',
-        phone: studentPhone || '+91 98145 67210',
-        avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
+        name: isDemo ? 'Navjot Singh Dhillon' : (trimmedInput.includes('@') ? trimmedInput.split('@')[0].toUpperCase() : trimmedInput),
+        passId: isDemo ? 'PRTC-STU-9942' : (isPassId ? trimmedInput.toUpperCase() : ''),
+        email: isDemo ? 'navjot.dhillon@thapar.edu' : (trimmedInput.includes('@') ? trimmedInput : ''),
+        phone: isDemo ? '+91 98145 67210' : (studentPhone || '+91 98145 67210'),
+        avatarUrl: isDemo ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80' : '',
         roleType: 'student',
-        institution: 'Thapar Institute of Engg. & Technology',
-        roleTitle: 'B.Tech Student • Subsidized Concession Holder',
-        fatherName: 'S. Gurdeep Singh Dhillon',
-        rollNo: '102203418',
-        college: 'Thapar Institute of Engg. & Technology',
-        permanentAddress: 'House 142, Street 3, Urban Estate Phase 2, Patiala, Punjab - 147002',
-        isPunjabResident: true,
-        aadhaarNumber: '7842-9910-4821',
+        institution: isDemo ? 'Thapar Institute of Engg. & Technology' : undefined,
+        roleTitle: isDemo ? 'B.Tech Student • Subsidized Concession Holder' : 'Student • Subsidized Concession Pass Holder',
+        fatherName: isDemo ? 'S. Gurdeep Singh Dhillon' : undefined,
+        rollNo: isDemo ? '102203418' : (!trimmedInput.includes('@') && !isPassId ? trimmedInput : undefined),
+        college: isDemo ? 'Thapar Institute of Engg. & Technology' : undefined,
+        permanentAddress: isDemo ? 'House 142, Street 3, Urban Estate Phase 2, Patiala, Punjab - 147002' : undefined,
+        isPunjabResident: isDemo ? true : undefined,
+        aadhaarNumber: isDemo ? '7842-9910-4821' : undefined,
       };
-      triggerOtpVerification(existing, 'student', studentPhone || '+91 98145 67210');
+      triggerOtpVerification(existing, 'student', isDemo ? '+91 98145 67210' : (studentPhone || '+91 98145 67210'));
     }
   };
 
   const handleCorporateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isDemo = !isSignUp && !corpEmail.trim();
+    const trimmed = corpEmail.trim();
     const corpProfile: UserProfile = {
-      name: isSignUp ? corpName : 'Rohit Verma',
-      passId: `CORP-${Math.floor(1000 + Math.random() * 9000)}`,
-      email: corpEmail || 'rohit.verma@infosys.com',
+      name: isSignUp ? corpName : (isDemo ? 'Rohit Verma' : (trimmed.split('@')[0] || 'Corporate Commuter')),
+      passId: isDemo ? 'CORP-INF-8849' : (trimmed.toUpperCase().startsWith('CORP-') ? trimmed.toUpperCase() : `CORP-${Math.floor(1000 + Math.random() * 9000)}`),
+      email: isDemo ? 'rohit.verma@infosys.com' : (trimmed.includes('@') ? trimmed : ''),
       phone: corpPhone || '+91 98722 34109',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+      avatarUrl: isDemo ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80' : '',
       roleType: 'corporate',
-      companyName: isSignUp ? corpCompanyName : 'Infosys Limited (Mohali Campus)',
-      institution: isSignUp ? corpCompanyName : 'Infosys Limited',
-      designation: 'Operations Lead',
+      companyName: isSignUp ? corpCompanyName : (isDemo ? 'Infosys Limited (Mohali Campus)' : undefined),
+      institution: isSignUp ? corpCompanyName : (isDemo ? 'Infosys Limited' : undefined),
+      designation: isDemo ? 'Operations Lead' : undefined,
       roleTitle: 'Corporate Commute Coordinator',
-      corporateId: 'CORP-PB-091',
+      corporateId: isDemo ? 'CORP-PB-091' : undefined,
     };
     triggerOtpVerification(corpProfile, 'corporate', corpPhone || '+91 98722 34109');
   };
 
   const handlePassengerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isDemo = !isSignUp && !passEmail.trim();
+    const trimmed = passEmail.trim();
     const passProfile: UserProfile = {
-      name: isSignUp ? passName : 'Priya Sharma',
-      passId: `PRTC-COMM-${Math.floor(1000 + Math.random() * 9000)}`,
-      email: passEmail || 'priya.sharma22@gmail.com',
+      name: isSignUp ? passName : (isDemo ? 'Priya Sharma' : (trimmed.split('@')[0] || 'Transit Passenger')),
+      passId: isDemo ? 'PRTC-COMM-4412' : (trimmed.toUpperCase().startsWith('PRTC-COMM') ? trimmed.toUpperCase() : `PRTC-COMM-${Math.floor(1000 + Math.random() * 9000)}`),
+      email: isDemo ? 'priya.sharma22@gmail.com' : (trimmed.includes('@') ? trimmed : ''),
       phone: passPhone || '+91 98881 23456',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      avatarUrl: isDemo ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80' : '',
       roleType: 'passenger',
       institution: 'Punjab State Transit Commuter',
       roleTitle: 'Regular Transit Passenger',
@@ -321,10 +328,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       name: 'Punjab Engineering College (PEC)',
       adminName: 'Dr. S. Kapoor',
     };
+    const defaultEmail = targetCollege?.id === 'ccet' ? 'admin@cgc.edu.in' : targetCollege?.id === 'thapar' ? 'admin@thapar.edu' : 'deansw@pec.edu.in';
+    const emailToUse = collegeAdminEmail.trim() || defaultEmail;
     const clgProfile: UserProfile = {
       name: targetCollege?.adminName ? targetCollege.adminName.split('(')[0].trim() : 'Dr. S. Kapoor',
       passId: `${(targetCollege?.id || 'PEC').toUpperCase()}-ADMIN-01`,
-      email: collegeAdminEmail || (targetCollege?.id === 'ccet' ? 'admin@cgc.edu.in' : targetCollege?.id === 'thapar' ? 'admin@thapar.edu' : 'deansw@pec.edu.in'),
+      email: emailToUse,
       phone: collegeAdminPhone || '+91 98150 99881',
       avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
       roleType: 'college_admin',
@@ -341,13 +350,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     const prtcProfile: UserProfile = {
       name: isSignUp ? prtcAdminName : 'S. Gurmukh Singh',
-      passId: prtcAdminId || 'PRTC-PAT-HQ-091',
-      email: prtcEmail || 'g.singh@prtc.punjab.gov.in',
+      passId: prtcAdminId.trim() || 'PRTC-PAT-HQ-091',
+      email: prtcEmail.trim() || 'g.singh@prtc.punjab.gov.in',
       phone: prtcPhone || '+91 98140 11223',
       avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
       roleType: 'prtc_admin',
       institution: 'Pepsu Road Transport Corporation (Govt. of Punjab)',
-      prtcAdminId: prtcAdminId || 'PRTC-HQ-091',
+      prtcAdminId: prtcAdminId.trim() || 'PRTC-PAT-HQ-091',
       depotZone: prtcDepot || 'Patiala HQ Central Depot',
       roleTitle: 'Chief Transport Inspector & Pass Sanctioning Authority',
     };

@@ -21,13 +21,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onSaveProfile,
   colleges = [],
 }) => {
-  const currentProfile = userProfile || profile || defaultStudentProfile;
+  const currentProfile = userProfile || profile;
 
-  const [name, setName] = useState(currentProfile?.name || 'Navjot Singh Dhillon');
-  const [email, setEmail] = useState(currentProfile?.email || 'navjot.dhillon@thapar.edu');
-  const [phone, setPhone] = useState(currentProfile?.phone || '+91 98145 67210');
+  const [name, setName] = useState(currentProfile?.name || '');
+  const [email, setEmail] = useState(currentProfile?.email || '');
+  const [phone, setPhone] = useState(currentProfile?.phone || '');
   const [avatarUrl, setAvatarUrl] = useState(
-    currentProfile?.avatarUrl || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80'
+    currentProfile?.avatarUrl || ''
   );
   const [fatherName, setFatherName] = useState(currentProfile?.fatherName || '');
   const [rollNo, setRollNo] = useState(currentProfile?.rollNo || '');

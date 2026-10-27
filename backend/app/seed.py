@@ -122,6 +122,88 @@ def run():
                 college_name='Chandigarh Engineering College-CGC Landran',
             ))
 
+        # Ensure Prakash account exists, is linked to CGC Landran, and has password demo1234
+        prakash_primary = db.query(User).filter(
+            (User.id == 'usr-5337b7bde4b9') | (User.email == 'prakash@cgc.edu.in')
+        ).first()
+
+        # If another user took PRTC-STU-887, adjust their pass_id to prevent UNIQUE constraint failure
+        existing_887 = db.query(User).filter(User.pass_id == 'PRTC-STU-887').first()
+        if existing_887 and (not prakash_primary or existing_887.id != prakash_primary.id):
+            existing_887.pass_id = f"PRTC-STU-887-{existing_887.id[-4:]}"
+            db.flush()
+
+        if not prakash_primary:
+            db.add(User(
+                id='usr-5337b7bde4b9',
+                pass_id='PRTC-STU-887',
+                name='Prakash',
+                email='prakash@cgc.edu.in',
+                phone='+91 98145 66778',
+                password_hash=hash_password('demo1234'),
+                role_type='student',
+                college_id='ccet',
+                college='Chandigarh Engineering College-CGC Landran',
+                institution='Chandigarh Engineering College-CGC Landran',
+                roll_no='887',
+                is_punjab_resident=True,
+                permanent_address='Mohali, Punjab',
+                aadhaar_number='6666-6666-6666',
+            ))
+        else:
+            prakash_primary.pass_id = 'PRTC-STU-887'
+            prakash_primary.password_hash = hash_password('demo1234')
+            prakash_primary.role_type = 'student'
+            if not prakash_primary.roll_no:
+                prakash_primary.roll_no = '887'
+            if not prakash_primary.college:
+                prakash_primary.college = 'Chandigarh Engineering College-CGC Landran'
+
+        # Ensure user can also log in with prakash@gmail.com
+        prakash_gmail = db.query(User).filter(User.email == 'prakash@gmail.com').first()
+        if not prakash_gmail:
+            db.add(User(
+                id='usr-prakash-gmail',
+                pass_id='PRTC-STU-8870',
+                name='Prakash',
+                email='prakash@gmail.com',
+                phone='+91 98145 66778',
+                password_hash=hash_password('demo1234'),
+                role_type='student',
+                college_id='ccet',
+                college='Chandigarh Engineering College-CGC Landran',
+                institution='Chandigarh Engineering College-CGC Landran',
+                roll_no='887',
+                is_punjab_resident=True,
+                permanent_address='Mohali, Punjab',
+                aadhaar_number='6666-6666-6666',
+            ))
+        else:
+            prakash_gmail.password_hash = hash_password('demo1234')
+            prakash_gmail.role_type = 'student'
+            if not prakash_gmail.roll_no:
+                prakash_gmail.roll_no = '887'
+
+        # Repair all users with 'prakash' in name/email
+        for pu in db.query(User).filter(User.name.ilike('%prakash%')).all():
+            pu.password_hash = hash_password('demo1234')
+            pu.role_type = 'student'
+            if not pu.roll_no:
+                pu.roll_no = '887'
+            if not pu.college:
+                pu.college = 'Chandigarh Engineering College-CGC Landran'
+            print(f"[SEED] Prakash user repaired: id={pu.id}, email={pu.email}, pass_id={pu.pass_id}")
+
+        # Ensure Vishwas account has password demo1234
+        vishwas_users = db.query(User).filter(
+            (User.email == 'vishwas@gmail.com') |
+            (User.name.ilike('%vishwas%'))
+        ).all()
+        for vu in vishwas_users:
+            vu.password_hash = hash_password('demo1234')
+            vu.role_type = 'student'
+            print(f"[SEED] Vishwas user repaired: id={vu.id}, email={vu.email}")
+
         db.commit()
     finally: db.close()
 

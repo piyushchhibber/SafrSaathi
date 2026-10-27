@@ -141,11 +141,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const collegeLabel =
     userProfile?.college || userProfile?.institution || myApp?.collegeName || 'College not set';
   const rollLabel = userProfile?.rollNo || myApp?.rollNumber || '—';
-  const passIdLabel =
-    userProfile?.passId ||
-    (myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
-    (isApproved ? myApp?.id : undefined) ||
-    'Not issued';
+  const passIdLabel = isApproved
+    ? ((myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
+       (userProfile?.passId && !userProfile.passId.toLowerCase().startsWith('usr-') ? userProfile.passId : undefined) ||
+       myApp?.id ||
+       'Issued')
+    : 'Not issued';
   const validityLabel = (myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '—';
 
   const virtualPassData = {

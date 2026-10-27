@@ -207,7 +207,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
   const minutes = Math.floor((secondsRemaining % 3600) / 60);
   const seconds = secondsRemaining % 60;
 
-  const displayName = passData.name || passData.holderName || 'Navjot Singh Dhillon';
+  const displayName = passData.name || passData.holderName || 'Transit Commuter';
   const displayPassId = passData.passId || passData.ticketNumber || 'PRTC-PASS-8891';
   const displayPassType =
     passData.passType ||
