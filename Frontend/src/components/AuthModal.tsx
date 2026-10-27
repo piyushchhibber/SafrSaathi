@@ -324,7 +324,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const clgProfile: UserProfile = {
       name: targetCollege?.adminName ? targetCollege.adminName.split('(')[0].trim() : 'Dr. S. Kapoor',
       passId: `${(targetCollege?.id || 'PEC').toUpperCase()}-ADMIN-01`,
-      email: collegeAdminEmail || 'deansw@pec.edu.in',
+      email: collegeAdminEmail || (targetCollege?.id === 'ccet' ? 'admin@cgc.edu.in' : targetCollege?.id === 'thapar' ? 'admin@thapar.edu' : 'deansw@pec.edu.in'),
       phone: collegeAdminPhone || '+91 98150 99881',
       avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
       roleType: 'college_admin',

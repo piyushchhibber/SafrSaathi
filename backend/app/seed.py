@@ -69,6 +69,7 @@ def run():
             ('usr-corp-01','CORP-INF-8849','Rohit Verma','rohit.verma@infosys.com','corporate','Infosys Limited',None,None),
             ('usr-pass-01','PRTC-COMM-4412','Priya Sharma','priya.sharma22@gmail.com','passenger','Punjab State Transit Commuter',None,None),
             ('usr-college-01','PEC-ADMIN-01','Dr. S. Kapoor','deansw@pec.edu.in','college_admin','Punjab Engineering College (PEC)','pec','Punjab Engineering College (PEC)'),
+            ('usr-college-ccet','CCET-ADMIN-01','Dr. D. Sharma','admin@cgc.edu.in','college_admin','Chandigarh Engineering College-CGC Landran','ccet','Chandigarh Engineering College-CGC Landran'),
             ('usr-prtc-01','PRTC-PAT-HQ-091','S. Gurmukh Singh','g.singh@prtc.punjab.gov.in','prtc_admin','Pepsu Road Transport Corporation',None,None)
         ]
         if not db.query(User).count():
@@ -80,6 +81,44 @@ def run():
         if pec_admin:
             pec_admin.college_id = 'pec'
             pec_admin.college_name = 'Punjab Engineering College (PEC)'
+
+        # Ensure CCET / CEC College Admin exists
+        ccet_admin = db.query(User).filter((User.email == 'admin@cgc.edu.in') | (User.pass_id == 'CCET-ADMIN-01')).first()
+        if not ccet_admin:
+            db.add(User(
+                id='usr-college-ccet',
+                pass_id='CCET-ADMIN-01',
+                name='Dr. D. Sharma',
+                email='admin@cgc.edu.in',
+                phone='+91 98150 99882',
+                password_hash=hash_password('demo1234'),
+                role_type='college_admin',
+                avatar_url='',
+                institution='Chandigarh Engineering College-CGC Landran',
+                college_id='ccet',
+                college_name='Chandigarh Engineering College-CGC Landran',
+            ))
+        else:
+            ccet_admin.college_id = 'ccet'
+            ccet_admin.college_name = 'Chandigarh Engineering College-CGC Landran'
+            ccet_admin.password_hash = hash_password('demo1234')
+
+        # Add alias for admin@cec.edu.in and CEC-ADMIN-01
+        cec_alias = db.query(User).filter((User.email == 'admin@cec.edu.in') | (User.pass_id == 'CEC-ADMIN-01')).first()
+        if not cec_alias:
+            db.add(User(
+                id='usr-college-cec-alias',
+                pass_id='CEC-ADMIN-01',
+                name='Dr. D. Sharma',
+                email='admin@cec.edu.in',
+                phone='+91 98150 99882',
+                password_hash=hash_password('demo1234'),
+                role_type='college_admin',
+                avatar_url='',
+                institution='Chandigarh Engineering College-CGC Landran',
+                college_id='ccet',
+                college_name='Chandigarh Engineering College-CGC Landran',
+            ))
 
         db.commit()
     finally: db.close()
