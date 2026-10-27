@@ -7,7 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from .database import Base, engine, get_db, ensure_columns
 from .models import (User, College, StudentApplication, Ticket, TicketVerification, RouteSchedule)
 from .security import hash_password, verify_password, create_token, decode_token, create_qr_token
@@ -224,15 +224,15 @@ def schedules(db: Session = Depends(get_db)):
 def auth_profile(body: AuthPayload, db: Session = Depends(get_db)):
     p = body.profile
     email = (p.get("email") or "").strip().lower()
-    if not email:
-        raise HTTPException(400, "Email is required")
-    user = db.scalar(
-        select(User).where(
-            (User.email == email)
-            | (User.pass_id == email.upper())
-            | (User.pass_id == email)
-        )
-    )
+    pass_id = (p.get("passId") or "").strip()
+    if not email and not pass_id:
+        raise HTTPException(400, "Email or Admin ID is required")
+    conditions = []
+    if email:
+        conditions.extend([User.email == email, User.pass_id == email.upper(), User.pass_id == email])
+    if pass_id:
+        conditions.extend([User.pass_id == pass_id, User.pass_id == pass_id.upper(), User.email == pass_id.lower()])
+    user = db.scalar(select(User).where(or_(*conditions)))
 
     if body.mode == "register":
         if user:

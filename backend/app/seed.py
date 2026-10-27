@@ -76,32 +76,34 @@ def run():
             for id,pid,n,e,r,inst,cid,cname in demo:
                 db.add(User(id=id,pass_id=pid,name=n,email=e,phone='',password_hash=hash_password('demo1234'),role_type=r,avatar_url='',institution=inst,college_id=cid,college_name=cname))
 
-        # Automatic repair for existing databases (Supabase, local SQLite, Render)
-        pec_admin = db.query(User).filter(User.email == 'deansw@pec.edu.in', User.college_id.is_(None)).first()
-        if pec_admin:
-            pec_admin.college_id = 'pec'
-            pec_admin.college_name = 'Punjab Engineering College (PEC)'
-
-        # Ensure CCET / CEC College Admin exists
-        ccet_admin = db.query(User).filter((User.email == 'admin@cgc.edu.in') | (User.pass_id == 'CCET-ADMIN-01')).first()
-        if not ccet_admin:
-            db.add(User(
-                id='usr-college-ccet',
-                pass_id='CCET-ADMIN-01',
-                name='Dr. D. Sharma',
-                email='admin@cgc.edu.in',
-                phone='+91 98150 99882',
-                password_hash=hash_password('demo1234'),
-                role_type='college_admin',
-                avatar_url='',
-                institution='Chandigarh Engineering College-CGC Landran',
-                college_id='ccet',
-                college_name='Chandigarh Engineering College-CGC Landran',
-            ))
-        else:
-            ccet_admin.college_id = 'ccet'
-            ccet_admin.college_name = 'Chandigarh Engineering College-CGC Landran'
-            ccet_admin.password_hash = hash_password('demo1234')
+        # Automatic repair for all demo users (Supabase, local SQLite, Render)
+        for uid, pid, n, e, r, inst, cid, cname in demo:
+            u = db.query(User).filter((User.email == e) | (User.pass_id == pid) | (User.id == uid)).first()
+            if not u:
+                db.add(User(
+                    id=uid,
+                    pass_id=pid,
+                    name=n,
+                    email=e,
+                    phone='',
+                    password_hash=hash_password('demo1234'),
+                    role_type=r,
+                    avatar_url='',
+                    institution=inst,
+                    college_id=cid,
+                    college_name=cname
+                ))
+            else:
+                u.password_hash = hash_password('demo1234')
+                u.role_type = r
+                if pid:
+                    u.pass_id = pid
+                if cid:
+                    u.college_id = cid
+                if cname:
+                    u.college_name = cname
+                if inst and not u.institution:
+                    u.institution = inst
 
         # Add alias for admin@cec.edu.in and CEC-ADMIN-01
         cec_alias = db.query(User).filter((User.email == 'admin@cec.edu.in') | (User.pass_id == 'CEC-ADMIN-01')).first()
