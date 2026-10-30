@@ -8,4 +8,6 @@ PyJWT>=2.10.1,<3.0
 python-multipart>=0.0.20,<1.0
 qrcode[pil]>=8.0,<9.0
 google-auth>=2.0,<3.0
+# Required by google.auth.transport.requests when validating Google ID tokens.
+requests>=2.31,<3.0
 psycopg[binary]>=3.2,<4.0
