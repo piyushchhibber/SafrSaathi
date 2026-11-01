@@ -1,13 +1,17 @@
-"""Create or repair the demo admin logins (password: demo1234).
+"""Create or repair the admin logins.
 
-Run from the backend folder with the virtual environment active:
+In development:
     python make_admins.py
+
+In production:
+    ADMIN_PASSWORD="<strong-password>" python make_admins.py
 """
+import os
 from app.database import SessionLocal
 from app.models import User
 from app.security import hash_password
 
-PASSWORD = "demo1234"
+PASSWORD = os.getenv("ADMIN_PASSWORD", "demo1234")
 
 # id, pass_id, name, email, role, institution, college_id
 ADMINS = [
