@@ -442,6 +442,17 @@ def google_complete(body: GoogleCompletePayload, db: Session = Depends(get_db)):
     if len(re.sub(r"\D", "", p.get("aadhaarNumber") or "")) != 12:
         raise HTTPException(400, "Enter a valid 12-digit Aadhaar number")
 
+    dob = (p.get("dateOfBirth") or p.get("dob") or "").strip()
+    if dob:
+        try:
+            born = datetime.strptime(dob, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(400, "Date of birth must be YYYY-MM-DD")
+        if not (datetime.now().year - 70 <= born.year <= datetime.now().year - 14):
+            raise HTTPException(400, "Enter a realistic date of birth")
+    if p.get("gender") and p["gender"] not in {"Male", "Female", "Other"}:
+        raise HTTPException(400, "Invalid gender value")
+
     user = User(
         id=f"usr-{uuid.uuid4().hex[:12]}",
         pass_id=f"USR-{uuid.uuid4().hex[:8].upper()}",

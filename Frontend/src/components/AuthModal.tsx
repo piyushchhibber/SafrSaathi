@@ -331,6 +331,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         name: studentName.trim(),
         email: studentEmail.trim().toLowerCase(),
         phone: studentPhone.trim(),
+        dateOfBirth: studentDob,
         dob: studentDob,
         gender: studentGender,
         college: studentCollege,

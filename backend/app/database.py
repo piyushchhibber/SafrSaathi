@@ -66,6 +66,8 @@ def ensure_columns():
     if "users" in inspector.get_table_names():
         u_cols = {c["name"] for c in inspector.get_columns("users")}
         with engine.begin() as conn:
+            if "date_of_birth" not in u_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN date_of_birth VARCHAR"))
             if "dob" not in u_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN dob VARCHAR"))
             if "gender" not in u_cols:

@@ -30,6 +30,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     currentProfile?.avatarUrl || ''
   );
   const [fatherName, setFatherName] = useState(currentProfile?.fatherName || '');
+  const [dateOfBirth, setDateOfBirth] = useState(currentProfile?.dateOfBirth || currentProfile?.dob || '');
+  const [gender, setGender] = useState(currentProfile?.gender || 'Male');
   const [rollNo, setRollNo] = useState(currentProfile?.rollNo || '');
   const [college, setCollege] = useState(currentProfile?.college || currentProfile?.institution || colleges[0]?.name || '');
   const [address, setAddress] = useState(currentProfile?.permanentAddress || '');
@@ -47,6 +49,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setPhone(currentProfile.phone || '');
       setAvatarUrl(currentProfile.avatarUrl || '');
       setFatherName(currentProfile.fatherName || '');
+      setDateOfBirth(currentProfile.dateOfBirth || currentProfile.dob || '');
+      setGender(currentProfile.gender || 'Male');
       setRollNo(currentProfile.rollNo || '');
       setCollege(currentProfile.college || currentProfile.institution || colleges[0]?.name || '');
       setAddress(currentProfile.permanentAddress || '');
@@ -97,6 +101,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       phone,
       avatarUrl,
       fatherName: currentProfile.roleType === 'student' ? fatherName : currentProfile.fatherName,
+      dateOfBirth: currentProfile.roleType === 'student' ? dateOfBirth : currentProfile.dateOfBirth,
+      dob: currentProfile.roleType === 'student' ? dateOfBirth : currentProfile.dob,
+      gender: currentProfile.roleType === 'student' ? gender : currentProfile.gender,
       rollNo: currentProfile.roleType === 'student' ? rollNo : currentProfile.rollNo,
       college: currentProfile.roleType === 'student' ? college : currentProfile.college,
       permanentAddress: currentProfile.roleType === 'student' ? address : currentProfile.permanentAddress,
@@ -304,6 +311,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     onChange={(e) => setRollNo(e.target.value)}
                     className="w-full bg-white border border-[#c6c5d4] rounded-xl px-3 py-2 text-xs text-[#1b1c1c] focus:outline-none focus:border-[#000666]"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1b1c1c] mb-1">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    className="w-full bg-white border border-[#c6c5d4] rounded-xl px-3 py-2 text-xs text-[#1b1c1c] focus:outline-none focus:border-[#000666]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#1b1c1c] mb-1">Gender</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full bg-white border border-[#c6c5d4] rounded-xl px-3 py-2 text-xs text-[#1b1c1c] focus:outline-none focus:border-[#000666]"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
               </div>
 
