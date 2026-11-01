@@ -47,14 +47,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   // an approved pass remains visible after a fresh login/session restore.
   const myApp: StudentApplication | undefined = (applications || []).find((app) => {
     if (!app) return false;
-    if (app.studentId) {
-      return app.studentId === userProfile?.id || app.studentId === userProfile?.passId;
-    }
-    return (
+    const matchesId =
+      app.studentId === userProfile?.id ||
+      app.studentId === userProfile?.passId;
+    const matchesName =
       !!app.name &&
       !!userProfile?.name &&
-      app.name.toLowerCase() === userProfile.name.toLowerCase()
-    );
+      app.name.trim().toLowerCase() === userProfile.name.trim().toLowerCase();
+    const matchesRoll =
+      !!app.rollNumber &&
+      !!userProfile?.rollNo &&
+      app.rollNumber === userProfile.rollNo;
+    return Boolean(matchesId || matchesName || matchesRoll);
   });
 
   const [selectedDocPreview, setSelectedDocPreview] = useState<{

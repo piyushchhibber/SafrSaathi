@@ -48,6 +48,11 @@ export interface PassVerification {
   verifiedBy: string;
 }
 
+export type GoogleAuthResult =
+  | { profile: UserProfile; accessToken: string; needsOnboarding?: false }
+  | { needsOnboarding: true; signupToken: string;
+      prefill: { name: string; email: string; avatarUrl: string } };
+
 export const api = {
   bootstrap: () => request<BootstrapData>('/bootstrap'),
   authenticateProfile: (profile: UserProfile, password: string, mode: 'login' | 'register') =>
@@ -56,9 +61,14 @@ export const api = {
       body: JSON.stringify({ profile, password, mode }),
     }),
   authenticateGoogle: (credential: string, roleType: UserRoleType, profile: Partial<UserProfile> = {}) =>
-    request<{ profile: UserProfile; accessToken: string }>('/auth/google', {
+    request<GoogleAuthResult>('/auth/google', {
       method: 'POST',
       body: JSON.stringify({ credential, roleType, profile }),
+    }),
+  completeGoogleSignup: (signupToken: string, profile: Partial<UserProfile>) =>
+    request<{ profile: UserProfile; accessToken: string }>('/auth/google/complete', {
+      method: 'POST',
+      body: JSON.stringify({ signupToken, profile }),
     }),
   updateProfile: (profile: UserProfile) =>
     request<UserProfile>(`/users/${encodeURIComponent(profile.passId)}`, {
