@@ -1,4 +1,5 @@
-import sys, json, re
+import os, sys, json, re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -34,6 +35,9 @@ def apply(obj,p):
         if s in cols and s not in {'id','created_at'}: setattr(obj,s,v)
 
 def run():
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        print("[SEED] Skipping database seeding and password repairs in production environment.")
+        return
     Base.metadata.create_all(engine)
     ensure_columns()
     db = SessionLocal()
@@ -193,6 +197,73 @@ def run():
             if not pu.college:
                 pu.college = 'Chandigarh Engineering College-CGC Landran'
             print(f"[SEED] Prakash user repaired: id={pu.id}, email={pu.email}, pass_id={pu.pass_id}")
+
+        # Ensure Prakash application exists and is fully approved
+        now_dt = datetime.now(timezone.utc)
+        prakash_app = db.query(StudentApplication).filter(
+            (StudentApplication.name.ilike('%prakash%')) |
+            (StudentApplication.student_id == 'usr-5337b7bde4b9') |
+            (StudentApplication.student_id == 'usr-prakash-gmail') |
+            (StudentApplication.student_id == 'PRTC-STU-887')
+        ).first()
+
+        if not prakash_app:
+            prakash_app = StudentApplication(
+                id='app-prakash',
+                student_id='usr-5337b7bde4b9',
+                name='Prakash',
+                initials='P',
+                father_name='R. Prakash',
+                college_id='ccet',
+                college_name='Chandigarh Engineering College-CGC Landran',
+                roll_number='887',
+                course='B.Tech Computer Science & Engg',
+                semester='Semester 5 (2026-27)',
+                pass_type='Subsidized Student Concession',
+                route='Kharar Bus Stand -> CGC Landran Mohali Campus',
+                distance_km=16,
+                duration='Semester',
+                status='approved',
+                submitted_date='25 Oct 2026',
+                college_verified_by='Dr. D. Sharma (Dean Academics)',
+                college_verified_date='26 Oct 2026',
+                college_stamp_id='CCET-STAMP-991',
+                college_stamp_name='Official Seal of CGC Landran',
+                prtc_verified_by='S. Gurmukh Singh (PRTC Depot Officer)',
+                prtc_verified_date='27 Oct 2026',
+                prtc_admin_id='PRTC-PAT-HQ-091',
+                aadhaar_number='6666-6666-6666',
+                aadhaar_address='Mohali, Punjab',
+                is_punjab_resident=True,
+                fee_receipt_file='cgc_fee_receipt_prakash.pdf',
+                fee_receipt_no='CGC-FEE-2026-8871',
+                aadhaar_file='aadhaar_prakash_signed.pdf',
+                signature_affirmed=True,
+                original_fare=1200,
+                subsidized_amount_paid=300,
+                pass_issued_at=now_dt,
+                pass_expires_at=now_dt + timedelta(days=180),
+            )
+            db.add(prakash_app)
+            print("[SEED] Prakash approved application created!")
+        else:
+            prakash_app.status = 'approved'
+            prakash_app.duration = 'Semester'
+            prakash_app.route = 'Kharar Bus Stand -> CGC Landran Mohali Campus'
+            prakash_app.college_name = 'Chandigarh Engineering College-CGC Landran'
+            prakash_app.roll_number = '887'
+            prakash_app.college_verified_by = 'Dr. D. Sharma (Dean Academics)'
+            prakash_app.college_verified_date = '26 Oct 2026'
+            prakash_app.college_stamp_id = 'CCET-STAMP-991'
+            prakash_app.college_stamp_name = 'Official Seal of CGC Landran'
+            prakash_app.prtc_verified_by = 'S. Gurmukh Singh (PRTC Depot Officer)'
+            prakash_app.prtc_verified_date = '27 Oct 2026'
+            prakash_app.prtc_admin_id = 'PRTC-PAT-HQ-091'
+            if not prakash_app.pass_issued_at:
+                prakash_app.pass_issued_at = now_dt
+            if not prakash_app.pass_expires_at:
+                prakash_app.pass_expires_at = now_dt + timedelta(days=180)
+            print("[SEED] Prakash approved application repaired and activated!")
 
         # Ensure Vishwas account has password demo1234
         vishwas_users = db.query(User).filter(

@@ -47,3 +47,11 @@ def create_qr_token(subject: str, kind: str, expires_at: datetime) -> str:
         "exp": expires_at,
     }
     return jwt.encode(payload, SECRET, algorithm=ALGORITHM)
+
+def create_signup_token(email: str, name: str, picture: str, role: str) -> str:
+    now = datetime.now(timezone.utc)
+    return jwt.encode({
+        "sub": email, "kind": "google_signup", "intendedRole": role,
+        "name": name, "picture": picture,
+        "iat": now, "exp": now + timedelta(minutes=15),
+    }, SECRET, algorithm=ALGORITHM)

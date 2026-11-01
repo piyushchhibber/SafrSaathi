@@ -52,7 +52,7 @@ def get_db():
         db.close()
 
 def ensure_columns():
-    """Ensure missing columns like pass_issued_at and pass_expires_at exist on student_applications."""
+    """Ensure missing columns exist on student_applications and users."""
     from sqlalchemy import inspect, text
     inspector = inspect(engine)
     if "student_applications" in inspector.get_table_names():
@@ -62,3 +62,13 @@ def ensure_columns():
                 conn.execute(text("ALTER TABLE student_applications ADD COLUMN pass_issued_at TIMESTAMP"))
             if "pass_expires_at" not in existing_cols:
                 conn.execute(text("ALTER TABLE student_applications ADD COLUMN pass_expires_at TIMESTAMP"))
+
+    if "users" in inspector.get_table_names():
+        u_cols = {c["name"] for c in inspector.get_columns("users")}
+        with engine.begin() as conn:
+            if "date_of_birth" not in u_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN date_of_birth VARCHAR"))
+            if "dob" not in u_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN dob VARCHAR"))
+            if "gender" not in u_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR"))
