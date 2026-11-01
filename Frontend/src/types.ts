@@ -91,6 +91,8 @@ export interface UserProfile {
   roleTitle?: string;
   // Student Specific
   fatherName?: string;
+  dob?: string;
+  gender?: string;
   rollNo?: string;
   college?: string;
   permanentAddress?: string;

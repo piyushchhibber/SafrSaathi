@@ -16,6 +16,8 @@ class User(Base):
     institution: Mapped[str | None] = mapped_column(String, nullable=True)
     role_title: Mapped[str | None] = mapped_column(String, nullable=True)
     father_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    dob: Mapped[str | None] = mapped_column(String, nullable=True)
+    gender: Mapped[str | None] = mapped_column(String, nullable=True)
     roll_no: Mapped[str | None] = mapped_column(String, nullable=True)
     college: Mapped[str | None] = mapped_column(String, nullable=True)
     permanent_address: Mapped[str | None] = mapped_column(Text, nullable=True)
