@@ -349,6 +349,17 @@ export const ConductorDashboard: React.FC<{ userProfile: UserProfile }> = ({ use
             <button
               type="button"
               onClick={() => {
+                setPayload('PRTC-STU-2012');
+                setTripRoute('Zirakpur Bus Stand -> Landran');
+                verify('PRTC-STU-2012');
+              }}
+              className="px-2.5 py-1 rounded-lg bg-emerald-100/80 text-emerald-900 border border-emerald-300 font-bold hover:bg-emerald-200 transition text-[11px]"
+            >
+              Mani Ladla (Zirakpur • #869)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 setPayload('PRTC-STU-887');
                 setTripRoute('Kharar Bus Stand -> Landran');
                 verify('PRTC-STU-887');

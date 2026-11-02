@@ -38,11 +38,33 @@ def decode_token(token: str) -> dict:
     except jwt.PyJWTError as exc:
         raise ValueError("Invalid or expired access token") from exc
 
-def create_qr_token(subject: str, kind: str, expires_at: datetime) -> str:
+def create_qr_token(
+    subject: str,
+    kind: str,
+    expires_at: datetime,
+    name: str = "",
+    roll_number: str = "",
+    route: str = "",
+    pass_type: str = "",
+    college_name: str = "",
+    course: str = "",
+    semester: str = "",
+    pass_id: str = "",
+    avatar_url: str = "",
+) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": subject,
         "kind": kind,
+        "name": name,
+        "rollNumber": roll_number,
+        "route": route,
+        "passType": pass_type,
+        "collegeName": college_name,
+        "course": course,
+        "semester": semester,
+        "passId": pass_id,
+        "avatarUrl": avatar_url,
         "iat": now,
         "exp": expires_at,
     }

@@ -853,7 +853,21 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-    token = create_qr_token(application.id, "student_pass", expires_at)
+    holder = db.get(User, application.student_id)
+    token = create_qr_token(
+        subject=application.id,
+        kind="student_pass",
+        expires_at=expires_at,
+        name=application.name or "",
+        roll_number=application.roll_number or "",
+        route=application.route or "",
+        pass_type=application.pass_type or "Subsidized Student Concession",
+        college_name=application.college_name or "",
+        course=application.course or "",
+        semester=application.semester or "",
+        pass_id=application.pass_id or f"PRTC-STU-{application.roll_number}",
+        avatar_url=holder.avatar_url if holder else "",
+    )
     return {
         "applicationId": application.id,
         "token": token,
