@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserProfile, StudentApplication, College } from '../types';
 
 interface StudentDashboardProps {
@@ -42,6 +43,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onOpenApplicationModal,
   onOpenEditProfile,
 }) => {
+  const { t } = useTranslation();
   // Applications created before the current API used a pass ID as `studentId`,
   // while new applications use the immutable user ID.  Accept either form so
   // an approved pass remains visible after a fresh login/session restore.

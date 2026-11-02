@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserRoleType, UserProfile, College } from '../types';
 import { mockColleges } from '../data/mockData';
 import confetti from 'canvas-confetti';
@@ -73,6 +74,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onAuthSuccess,
   colleges = mockColleges,
 }) => {
+  const { t } = useTranslation();
   const defaultRole = initialRoleType || initialRole || 'student';
   const [activeTab, setActiveTab] = useState<UserRoleType>(defaultRole);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -624,7 +626,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   >
                     1
                   </span>
-                  <span className="text-[11px] sm:text-xs">Personal Details</span>
+                  <span className="text-[11px] sm:text-xs">{t('auth.onboardingStep1', 'Personal Details')}</span>
                 </div>
                 <div className={`flex-1 h-0.5 mx-2 ${onboardStep >= 2 ? 'bg-amber-400' : 'bg-white/20'}`} />
                 <div className={`flex items-center gap-1.5 ${onboardStep >= 2 ? 'text-white' : 'text-white/50'}`}>
@@ -635,7 +637,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   >
                     2
                   </span>
-                  <span className="text-[11px] sm:text-xs">Punjab Address</span>
+                  <span className="text-[11px] sm:text-xs">{t('auth.onboardingStep2', 'Punjab Address')}</span>
                 </div>
                 <div className={`flex-1 h-0.5 mx-2 ${onboardStep >= 3 ? 'bg-amber-400' : 'bg-white/20'}`} />
                 <div className={`flex items-center gap-1.5 ${onboardStep >= 3 ? 'text-white' : 'text-white/50'}`}>
@@ -646,7 +648,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   >
                     3
                   </span>
-                  <span className="text-[11px] sm:text-xs">ID Photo & Card</span>
+                  <span className="text-[11px] sm:text-xs">{t('auth.onboardingStep3', 'ID Photo & Card')}</span>
                 </div>
               </div>
             </div>
@@ -700,9 +702,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3.5 flex items-start gap-3">
                     <span className="material-symbols-outlined text-[#000666] text-xl shrink-0 mt-0.5">verified_user</span>
                     <div>
-                      <h4 className="text-xs font-bold text-[#000666]">Google Account Verified</h4>
+                      <h4 className="text-xs font-bold text-[#000666]">{t('auth.googleVerifiedBadge', 'Google Account Verified')}</h4>
                       <p className="text-[11px] text-[#454652] mt-0.5">
-                        Your identity has been authenticated. Please complete your academic details to register for the PRTC concession pass.
+                        {t('auth.googleVerifiedText', 'Your identity has been authenticated. Please complete your academic details to register for the PRTC concession pass.')}
                       </p>
                     </div>
                   </div>
@@ -818,7 +820,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="submit"
                     className="w-full bg-[#000666] text-white py-3 rounded-xl font-bold text-xs hover:bg-[#1a237e] transition shadow-md flex items-center justify-center gap-2 mt-2"
                   >
-                    <span>Next: Address Verification (Stage 2)</span>
+                    <span>{t('auth.nextAddress', 'Next: Address Verification (Stage 2)')}</span>
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                   </button>
                 </form>
@@ -880,7 +882,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       className="w-1/3 py-2.5 px-3 border border-[#c6c5d4] hover:bg-gray-100 rounded-xl font-bold text-xs text-[#454652] transition flex items-center justify-center gap-1.5"
                     >
                       <span className="material-symbols-outlined text-sm">arrow_back</span>
-                      <span>Back</span>
+                      <span>{t('auth.back', 'Back')}</span>
                     </button>
                     <button
                       type="submit"
@@ -891,7 +893,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           : 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed shadow-none'
                       }`}
                     >
-                      <span>Next: ID Card Photo (Stage 3)</span>
+                      <span>{t('auth.nextPhoto', 'Next: ID Card Photo (Stage 3)')}</span>
                       <span className="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
                   </div>
@@ -1015,7 +1017,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       className="w-1/3 py-3 px-3 border border-[#c6c5d4] hover:bg-gray-100 rounded-xl font-bold text-xs text-[#454652] transition flex items-center justify-center gap-1.5"
                     >
                       <span className="material-symbols-outlined text-sm">arrow_back</span>
-                      <span>Back</span>
+                      <span>{t('auth.back', 'Back')}</span>
                     </button>
                     <button
                       type="button"
@@ -1026,12 +1028,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {isCompleting ? (
                         <>
                           <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                          <span>Creating Pass Account...</span>
+                          <span>{t('common.loading', 'Creating Pass Account...')}</span>
                         </>
                       ) : (
                         <>
                           <span className="material-symbols-outlined text-sm">verified</span>
-                          <span>Complete Registration & Issue Pass</span>
+                          <span>{t('auth.completeRegistration', 'Complete Registration & Issue Pass')}</span>
                         </>
                       )}
                     </button>

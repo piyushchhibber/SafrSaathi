@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserRoleType } from '../types';
 import { SafrSaathiLogo } from './SafrSaathiLogo';
 
@@ -15,6 +16,7 @@ export const CentralGateway: React.FC<CentralGatewayProps> = ({
   currentRoleType,
   onNavigateToRole,
 }) => {
+  const { t } = useTranslation();
   const loginRoles: {
     id: UserRoleType;
     title: string;
@@ -29,44 +31,40 @@ export const CentralGateway: React.FC<CentralGatewayProps> = ({
   }[] = [
     {
       id: 'student',
-      title: 'Student Portal',
+      title: t('gateway.studentPortal', 'Student Portal'),
       subheading: 'Concession Pass (75% Subsidy)',
       icon: 'school',
-      description:
-        'Sign up with Punjab Aadhaar, college roll no. & fee receipt. Access virtual pass & live application status.',
-      buttonText: 'Student Sign In / Sign Up',
+      description: t('gateway.studentDesc', 'Sign up with Punjab Aadhaar, college roll no. & fee receipt. Access virtual pass & live application status.'),
+      buttonText: t('auth.signIn', 'Student Sign In / Sign Up'),
       accentColor: '#FF9933', // Saffron
       tag: 'Punjab Residents Only',
     },
     {
       id: 'corporate',
-      title: 'For Corporates',
+      title: t('gateway.corporatePortal', 'For Corporates'),
       subheading: 'Employee Commute Passes',
       icon: 'business_center',
-      description:
-        'Company sign-in & onboarding. Buy monthly executive passes, roster employee passes & access corporate billing.',
-      buttonText: 'Corporate Sign In / Sign Up',
+      description: t('gateway.corporateDesc', 'Company sign-in & onboarding. Buy monthly executive passes, roster employee passes & access corporate billing.'),
+      buttonText: t('auth.signIn', 'Corporate Sign In / Sign Up'),
       accentColor: '#1a237e', // Indigo
       tag: 'Bulk Transit',
     },
     {
       id: 'passenger',
-      title: 'Normal Passengers',
+      title: t('gateway.passengerPortal', 'Normal Passengers'),
       subheading: 'Daily Direct & One Day Tickets',
       icon: 'person',
-      description:
-        'Simple passenger sign-in & sign-up. Buy direct point-to-point tickets or 24-hour unlimited city passes.',
-      buttonText: 'Passenger Sign In / Sign Up',
+      description: t('gateway.passengerDesc', 'Simple passenger sign-in & sign-up. Buy direct point-to-point tickets or 24-hour unlimited city passes.'),
+      buttonText: t('auth.signIn', 'Passenger Sign In / Sign Up'),
       accentColor: '#138808', // Punjab Green
       tag: 'General Public',
     },
     {
       id: 'college_admin',
-      title: 'College Admin',
+      title: t('gateway.collegeAdmin', 'College Admin'),
       subheading: 'Institutional Verification Desk',
       icon: 'account_balance',
-      description:
-        'Sign in with your College Name. Review student applications, inspect fee receipts & apply official virtual college stamp.',
+      description: t('gateway.collegeDesc', 'Sign in with your College Name. Review student applications, inspect fee receipts & apply official virtual college stamp.'),
       buttonText: 'College Admin Sign In',
       accentColor: '#df8017',
       tag: 'Institutional Portal',
@@ -74,11 +72,10 @@ export const CentralGateway: React.FC<CentralGatewayProps> = ({
     },
     {
       id: 'prtc_admin',
-      title: 'PRTC Admin',
+      title: t('gateway.prtcAdmin', 'PRTC Admin'),
       subheading: 'State Transport Depot Authority',
       icon: 'admin_panel_settings',
-      description:
-        'Sign in with your Unique Admin ID. Inspect college-stamped passes, drill into Punjab colleges & issue state transit tokens.',
+      description: t('gateway.prtcDesc', 'Sign in with your Unique Admin ID. Inspect college-stamped passes, drill into Punjab colleges & issue state transit tokens.'),
       buttonText: 'PRTC Admin Sign In',
       accentColor: '#000666',
       tag: 'Depot Headquarters',
@@ -108,15 +105,15 @@ export const CentralGateway: React.FC<CentralGatewayProps> = ({
 
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-bold tracking-wide text-[#bdc2ff] mb-3">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            PUNJAB STATE TRANSIT & CONCESSION PORTAL
+            {t('gateway.heroBadge', 'PUNJAB STATE TRANSIT & CONCESSION PORTAL')}
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-2 tracking-tight leading-tight">
-            SafrSaathi Transit Portal
+            {t('gateway.heroTitle', 'Punjab Roadways & PRTC')}
           </h1>
 
           <p className="text-sm sm:text-base text-[#bdc2ff] max-w-2xl mb-6 leading-relaxed font-normal">
-            Unified digital ecosystem for Student Concession Passes with College Stamps, Corporate Transit Programs, PRTC Depot Governance, and General Commuters.
+            {t('gateway.heroSubtitle', 'Unified digital ecosystem for Student Concession Passes with College Stamps, Corporate Transit Programs, PRTC Depot Governance, and General Commuters.')}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -125,14 +122,14 @@ export const CentralGateway: React.FC<CentralGatewayProps> = ({
               className="bg-[#FF9933] text-black font-extrabold px-6 py-3 rounded-xl hover:bg-[#e68a2e] shadow-lg transition flex items-center gap-2 text-xs sm:text-sm"
             >
               <span className="material-symbols-outlined text-lg">school</span>
-              Student Pass Sign Up / Login
+              {t('gateway.studentPortal', 'Student Pass Sign Up / Login')}
             </button>
             <button
               onClick={onOpenSchedules}
               className="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold px-6 py-3 rounded-xl transition flex items-center gap-2 text-xs sm:text-sm"
             >
               <span className="material-symbols-outlined text-lg">schedule</span>
-              Transit Schedules & Depots
+              {t('nav.timings', 'Transit Schedules & Depots')}
             </button>
           </div>
         </div>

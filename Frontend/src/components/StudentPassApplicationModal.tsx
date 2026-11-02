@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StudentApplication, UserProfile, College } from '../types';
 import confetti from 'canvas-confetti';
 
@@ -17,6 +18,7 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
   colleges,
   onSubmitApplication,
 }) => {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Step 1: Necessary Details

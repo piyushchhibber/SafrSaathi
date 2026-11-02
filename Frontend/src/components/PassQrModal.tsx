@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
 import { api } from '../utils/api';
 
@@ -24,6 +25,7 @@ interface PassQrModalProps {
 }
 
 export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) => {
+  const { t } = useTranslation();
   const isDirectTicket = Boolean(
     (passData?.title && (passData.title.toLowerCase().includes('ticket') || passData.title.toLowerCase().includes('direct') || passData.title.toLowerCase().includes('single'))) ||
     (passData?.passType && (passData.passType.toLowerCase().includes('ticket') || passData.passType.toLowerCase().includes('single'))) ||
@@ -283,8 +285,8 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
                 P
               </div>
               <div>
-                <h3 className="font-extrabold text-base leading-none">PRTC DIGITAL PASS</h3>
-                <span className="text-[10px] text-[#bdc2ff]">Govt. of Punjab Official Transit</span>
+                <h3 className="font-extrabold text-base leading-none">{t('passModal.title', 'PRTC DIGITAL PASS')}</h3>
+                <span className="text-[10px] text-[#bdc2ff]">{t('passModal.subtitle', 'Govt. of Punjab Official Transit')}</span>
               </div>
             </div>
             <button
@@ -367,15 +369,15 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
           {/* Details */}
           <div className="w-full text-left bg-[#fbf9f8] border border-[#c6c5d4] rounded-2xl p-4 space-y-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-[#767683]">Beneficiary Name:</span>
+              <span className="text-[#767683]">{t('passModal.beneficiary', 'Beneficiary Name')}:</span>
               <span className="font-bold text-[#1b1c1c]">{displayName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#767683]">Pass Type:</span>
+              <span className="text-[#767683]">{t('passModal.passType', 'Pass Type')}:</span>
               <span className="font-semibold text-[#000666]">{displayPassType}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#767683]">Coverage Route:</span>
+              <span className="text-[#767683]">{t('passModal.coverageRoute', 'Coverage Route')}:</span>
               <span className="font-medium text-[#1b1c1c] text-right truncate max-w-[200px]">{displayRoute}</span>
             </div>
             {passData.college && (

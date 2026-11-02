@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PortalRole, UserProfile, UserRoleType } from '../types';
 import { SafrSaathiLogo } from './SafrSaathiLogo';
 
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSchedules,
   onLogout,
 }) => {
+  const { t, i18n } = useTranslation();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -51,21 +53,21 @@ export const Header: React.FC<HeaderProps> = ({
             className="hover:text-[#000666] transition flex items-center gap-1 focus:outline-none"
           >
             <span className="material-symbols-outlined text-sm">schedule</span>
-            Bus Timings & Depots
+            {t('nav.timings', 'Bus Timings & Depots')}
           </button>
           <button
             onClick={() => onOpenAuth('student')}
             className="hover:text-[#000666] transition flex items-center gap-1 focus:outline-none"
           >
             <span className="material-symbols-outlined text-sm">school</span>
-            Student Concession
+            {t('nav.student', 'Student Concession')}
           </button>
           <button
             onClick={() => onOpenAuth('corporate')}
             className="hover:text-[#000666] transition flex items-center gap-1 focus:outline-none"
           >
             <span className="material-symbols-outlined text-sm">business</span>
-            Corporate Passes
+            {t('nav.corporate', 'Corporate Passes')}
           </button>
         </nav>
       </div>
@@ -133,13 +135,28 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
+        {/* Language Switcher */}
+        <div className="flex items-center gap-1 bg-white border border-[#c6c5d4] rounded-xl px-2 py-1 shadow-xs">
+          <span className="material-symbols-outlined text-sm text-[#000666]">translate</span>
+          <select
+            value={i18n.language}
+            onChange={(e) => i18n.changeLanguage(e.target.value)}
+            className="text-xs font-bold text-[#1b1c1c] bg-transparent focus:outline-none cursor-pointer"
+            aria-label="Select Language"
+          >
+            <option value="en">English</option>
+            <option value="pa">ਪੰਜਾਬੀ</option>
+            <option value="hi">हिन्दी</option>
+          </select>
+        </div>
+
         {/* Login / Switch Account Button */}
         <button
           onClick={() => onOpenAuth()}
           className="px-3.5 py-1.5 rounded-xl bg-[#000666] hover:bg-[#1a237e] text-white text-xs font-extrabold transition shadow-xs flex items-center gap-1.5"
         >
           <span className="material-symbols-outlined text-sm">login</span>
-          <span className="hidden sm:inline">Sign In / Switch</span>
+          <span className="hidden sm:inline">{t('nav.signIn', 'Sign In / Switch')}</span>
         </button>
 
         {/* User Profile Avatar */}
