@@ -33,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
     { key: 'passenger', label: t('nav.roles.passenger', 'Passenger Dashboard'), icon: 'person', desc: t('nav.roles.passengerDesc', 'Direct & 1-day tickets'), badge: 'Passenger' },
     { key: 'college_admin', label: t('nav.roles.college_admin', 'College Admin Desk'), icon: 'account_balance', desc: t('nav.roles.collegeAdminDesc', 'Student reviews & college stamp'), badge: 'College' },
     { key: 'prtc_admin', label: t('nav.roles.prtc_admin', 'PRTC Admin Portal'), icon: 'local_police', desc: t('nav.roles.prtcAdminDesc', 'College lists & depot sanctions'), badge: 'PRTC HQ' },
+    { key: 'conductor', label: 'Crew Scanner', icon: 'qr_code_scanner', desc: 'Verify a passenger pass on board', badge: 'Crew' },
   ];
 
   return (

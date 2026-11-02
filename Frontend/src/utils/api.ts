@@ -46,6 +46,12 @@ export interface PassVerification {
   passType: string;
   avatarUrl?: string;
   verifiedBy: string;
+  collegeName?: string;
+  course?: string;
+  semester?: string;
+  expiresAt?: string;
+  routeValid?: boolean;
+  routeMessage?: string;
 }
 
 export type GoogleAuthResult =
@@ -92,10 +98,10 @@ export const api = {
   passQr: (applicationId: string) =>
     request<PassQr>(`/applications/${encodeURIComponent(applicationId)}/qr`),
 
-  verifyPass: (token: string) =>
+  verifyPass: (token: string, tripRoute?: string) =>
     request<PassVerification>('/passes/verify', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, tripRoute }),
     }),
 
   listTickets: () => request<BusTicket[]>('/tickets'),

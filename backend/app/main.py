@@ -218,6 +218,7 @@ class TicketVerificationPayload(BaseModel):
 
 class QrVerificationPayload(BaseModel):
     token: str
+    tripRoute: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -674,7 +675,7 @@ def verify_ticket(
     ticket_number: str,
     body: TicketVerificationPayload,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles("prtc_admin")),
+    actor: User = Depends(require_roles("prtc_admin", "conductor")),
 ):
     ticket = db.scalar(select(Ticket).where(Ticket.ticket_number == ticket_number))
     if not ticket:
@@ -824,7 +825,7 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
 def verify_student_pass(
     body: QrVerificationPayload,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles("prtc_admin")),
+    actor: User = Depends(require_roles("prtc_admin", "conductor")),
 ):
     raw_token = body.token.strip()
     if raw_token.startswith(QR_PREFIX):
@@ -839,6 +840,13 @@ def verify_student_pass(
     if not application or application.status != "approved":
         raise HTTPException(404, "No active approved pass was found")
     holder = db.get(User, application.student_id)
+    route_valid = True
+    route_message = "Pass route matches the active trip"
+    if body.tripRoute:
+        pass_stops = {x.strip().lower() for x in re.split(r"->|→", application.route) if x.strip()}
+        trip_stops = {x.strip().lower() for x in re.split(r"->|→", body.tripRoute) if x.strip()}
+        route_valid = bool(pass_stops & trip_stops)
+        route_message = "Pass route matches the active trip" if route_valid else "This pass is not authorised for the current bus route"
     return {
         "valid": True,
         "holderName": application.name,
@@ -847,6 +855,12 @@ def verify_student_pass(
         "passType": application.pass_type,
         "avatarUrl": holder.avatar_url if holder else "",
         "verifiedBy": actor.name,
+        "collegeName": application.college_name,
+        "course": application.course,
+        "semester": application.semester,
+        "expiresAt": application.pass_expires_at.isoformat() if application.pass_expires_at else None,
+        "routeValid": route_valid,
+        "routeMessage": route_message,
     }
 
 

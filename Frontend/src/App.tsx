@@ -17,6 +17,7 @@ import { CorporateDashboard } from './components/CorporateDashboard';
 import { PassengerDashboard } from './components/PassengerDashboard';
 import { CollegeAdminDashboard } from './components/CollegeAdminDashboard';
 import { PrtcAdminDashboard } from './components/PrtcAdminDashboard';
+import { ConductorDashboard } from './components/ConductorDashboard';
 import { OneDayPassView } from './components/OneDayPassView';
 import { AuthModal } from './components/AuthModal';
 import { StudentPassApplicationModal } from './components/StudentPassApplicationModal';
@@ -31,6 +32,7 @@ const roleMapping: Record<string, PortalRole> = {
   passenger: 'passenger',
   college_admin: 'college_admin',
   prtc_admin: 'prtc_admin',
+  conductor: 'conductor',
 };
 
 export default function App() {
@@ -227,6 +229,7 @@ export default function App() {
                 { id: 'passenger', label: t('quickSwitch.passenger', '3. Normal Passenger') },
                 { id: 'college_admin', label: t('quickSwitch.college_admin', '4. College Admin') },
                 { id: 'prtc_admin', label: t('quickSwitch.prtc_admin', '5. PRTC Admin') },
+                { id: 'conductor', label: '6. Conductor' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -391,6 +394,14 @@ export default function App() {
               onOpenEditProfile={() => setIsEditProfileOpen(true)}
               onOpenPassModal={(passData) => setActivePassData(passData)}
             />
+          )
+        )}
+
+        {currentRole === 'conductor' && (
+          !isAuthenticated || userProfile.roleType !== 'conductor' ? (
+            <RoleGate requiredRole="conductor" userProfile={userProfile} isAuthenticated={isAuthenticated} onOpenAuth={handleOpenAuth} onBackToAllowedPortal={() => setCurrentRole(roleMapping[userProfile.roleType] || 'gateway')} />
+          ) : (
+            <ConductorDashboard userProfile={userProfile} />
           )
         )}
 

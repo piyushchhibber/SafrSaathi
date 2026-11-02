@@ -457,19 +457,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handlePrtcAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isConductor = activeTab === 'conductor';
     const prtcProfile: UserProfile = {
-      name: isSignUp ? prtcAdminName : 'S. Gurmukh Singh',
-      passId: prtcAdminId.trim() || 'PRTC-PAT-HQ-091',
-      email: prtcEmail.trim() || 'g.singh@prtc.punjab.gov.in',
+      name: isSignUp ? prtcAdminName : (isConductor ? 'Harpreet Singh' : 'S. Gurmukh Singh'),
+      passId: prtcAdminId.trim() || (isConductor ? 'PRTC-CRW-221' : 'PRTC-PAT-HQ-091'),
+      email: prtcEmail.trim() || (isConductor ? 'harpreet.singh@prtc.punjab.gov.in' : 'g.singh@prtc.punjab.gov.in'),
       phone: prtcPhone || '+91 98140 11223',
       avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-      roleType: 'prtc_admin',
+      roleType: isConductor ? 'conductor' : 'prtc_admin',
       institution: 'Pepsu Road Transport Corporation (Govt. of Punjab)',
-      prtcAdminId: prtcAdminId.trim() || 'PRTC-PAT-HQ-091',
+      prtcAdminId: prtcAdminId.trim() || (isConductor ? 'PRTC-CRW-221' : 'PRTC-PAT-HQ-091'),
       depotZone: prtcDepot || 'Patiala Central HQ',
-      roleTitle: 'Chief Transport Inspector & Pass Sanctioning Authority',
+      roleTitle: isConductor ? 'PRTC Bus Conductor • Digital Pass Verification' : 'Chief Transport Inspector & Pass Sanctioning Authority',
     };
-    triggerOtpVerification(prtcProfile, 'prtc_admin', prtcPhone || '+91 98140 11223');
+    triggerOtpVerification(prtcProfile, isConductor ? 'conductor' : 'prtc_admin', prtcPhone || '+91 98140 11223');
   };
 
   const handleOtpChange = (index: number, val: string) => {
@@ -567,6 +568,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       icon: 'admin_panel_settings',
       accent: 'border-[#000666]',
     },
+    conductor: {
+      title: 'Crew Scanner',
+      desc: 'Onboard student pass verification & boarding control',
+      icon: 'qr_code_scanner',
+      accent: 'border-[#138808]',
+    },
   };
 
   const currentRoleMeta = roleMeta[activeTab] || roleMeta.student;
@@ -654,13 +661,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           ) : (
             /* 5-Role Tab Switcher inside Modal (hidden during onboarding) */
-            <div className="grid grid-cols-5 gap-1.5 mt-5 bg-black/20 p-1.5 rounded-2xl backdrop-blur-xs">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 mt-5 bg-black/20 p-1.5 rounded-2xl backdrop-blur-xs">
               {[
                 { id: 'student', label: 'Student', icon: 'school' },
                 { id: 'corporate', label: 'Corporate', icon: 'business' },
                 { id: 'passenger', label: 'Passenger', icon: 'person' },
                 { id: 'college_admin', label: 'College', icon: 'account_balance' },
                 { id: 'prtc_admin', label: 'PRTC', icon: 'shield_person' },
+                { id: 'conductor', label: 'Crew', icon: 'qr_code_scanner' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1136,7 +1144,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ) : (
             <>
               {/* Google Sign-In Action (hidden when onboardStep > 0 or otpStep) */}
-              {!otpStep && !signupToken && activeTab !== 'college_admin' && activeTab !== 'prtc_admin' && (
+              {!otpStep && !signupToken && activeTab !== 'college_admin' && activeTab !== 'prtc_admin' && activeTab !== 'conductor' && (
                 <div className="mb-5">
                   {googleClientId ? (
                     <div className="flex flex-col items-center justify-center">
@@ -1735,14 +1743,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               )}
 
               {/* 5. PRTC ADMIN FORM */}
-              {activeTab === 'prtc_admin' && (
+              {(activeTab === 'prtc_admin' || activeTab === 'conductor') && (
                 <form onSubmit={handlePrtcAdminSubmit} className="space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-[#c6c5d4]">
                     <div>
                       <h4 className="font-bold text-sm text-[#1b1c1c]">
-                        {isSignUp ? 'Register PRTC State Inspector' : 'PRTC State Transport Authority Login'}
+                        {isSignUp ? (activeTab === 'conductor' ? 'Register PRTC Crew Member' : 'Register PRTC State Inspector') : (activeTab === 'conductor' ? 'PRTC Conductor Login' : 'PRTC State Transport Authority Login')}
                       </h4>
-                      <p className="text-xs text-[#767683]">Official pass sanctioning desk & depot audit enforcement</p>
+                      <p className="text-xs text-[#767683]">{activeTab === 'conductor' ? 'Authorized onboard QR pass validation & boarding records' : 'Official pass sanctioning desk & depot audit enforcement'}</p>
                     </div>
                     <button
                       type="button"

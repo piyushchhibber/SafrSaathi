@@ -40,6 +40,12 @@ const ROLE_INFO: Record<UserRoleType, { title: string; icon: string; desc: strin
     desc: 'State transit headquarters portal for depot operations, pass sanctions, and college audits.',
     buttonLabel: 'Sign In as PRTC Admin',
   },
+  conductor: {
+    title: 'PRTC Conductor Scanner',
+    icon: 'qr_code_scanner',
+    desc: 'Authorized onboard verification for passenger concession passes.',
+    buttonLabel: 'Sign In as Conductor',
+  },
 };
 
 export const RoleGate: React.FC<RoleGateProps> = ({

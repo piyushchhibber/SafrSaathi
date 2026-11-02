@@ -5,10 +5,11 @@ export type PortalRole =
   | 'passenger'
   | 'college_admin'
   | 'prtc_admin'
+  | 'conductor'
   | 'schedules'
   | 'one_day_pass';
 
-export type UserRoleType = 'student' | 'corporate' | 'passenger' | 'college_admin' | 'prtc_admin';
+export type UserRoleType = 'student' | 'corporate' | 'passenger' | 'college_admin' | 'prtc_admin' | 'conductor';
 
 export interface StudentApplication {
   id: string;

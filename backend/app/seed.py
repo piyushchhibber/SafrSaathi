@@ -74,7 +74,8 @@ def run():
             ('usr-pass-01','PRTC-COMM-4412','Priya Sharma','priya.sharma22@gmail.com','passenger','Punjab State Transit Commuter',None,None),
             ('usr-college-01','PEC-ADMIN-01','Dr. S. Kapoor','deansw@pec.edu.in','college_admin','Punjab Engineering College (PEC)','pec','Punjab Engineering College (PEC)'),
             ('usr-college-ccet','CCET-ADMIN-01','Dr. D. Sharma','admin@cgc.edu.in','college_admin','Chandigarh Engineering College-CGC Landran','ccet','Chandigarh Engineering College-CGC Landran'),
-            ('usr-prtc-01','PRTC-PAT-HQ-091','S. Gurmukh Singh','g.singh@prtc.punjab.gov.in','prtc_admin','Pepsu Road Transport Corporation',None,None)
+            ('usr-prtc-01','PRTC-PAT-HQ-091','S. Gurmukh Singh','g.singh@prtc.punjab.gov.in','prtc_admin','Pepsu Road Transport Corporation',None,None),
+            ('usr-conductor-01','PRTC-CRW-221','Harpreet Singh','harpreet.singh@prtc.punjab.gov.in','conductor','PRTC Patiala Central Depot',None,None)
         ]
         if not db.query(User).count():
             for id,pid,n,e,r,inst,cid,cname in demo:

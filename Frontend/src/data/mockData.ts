@@ -343,6 +343,19 @@ export const defaultPrtcAdminProfile: UserProfile = {
   roleTitle: 'Senior Chief Transport Inspector & State Pass Authority',
 };
 
+export const defaultConductorProfile: UserProfile = {
+  id: 'usr-conductor-01',
+  name: 'Harpreet Singh',
+  passId: 'PRTC-CRW-221',
+  email: 'harpreet.singh@prtc.punjab.gov.in',
+  phone: '+91 98150 22109',
+  avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
+  roleType: 'conductor',
+  institution: 'PRTC Patiala Central Depot',
+  depotZone: 'Patiala Central Depot (Zone 1)',
+  roleTitle: 'PRTC Bus Conductor • Digital Pass Verification',
+};
+
 export const mockUserProfile = defaultStudentProfile;
 
 export const mockSchedules: RouteSchedule[] = [
