@@ -114,6 +114,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [resendTimer, setResendTimer] = useState<number>(30);
   const [isVerifying, setIsVerifying] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  const googleInitializedRef = useRef(false);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
   // Corporate Form State
@@ -243,18 +244,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   useEffect(() => {
     if (!isOpen || otpStep || signupToken || !googleClientId || !googleButtonRef.current || !window.google?.accounts?.id) return;
     googleButtonRef.current.innerHTML = '';
-    window.google.accounts.id.initialize({ client_id: googleClientId, callback: handleGoogleCredential });
+    if (!googleInitializedRef.current) {
+      window.google.accounts.id.initialize({ client_id: googleClientId, callback: handleGoogleCredential });
+      googleInitializedRef.current = true;
+    }
     window.google.accounts.id.renderButton(googleButtonRef.current, {
       theme: 'outline',
       size: 'large',
       width: 360,
       text: isSignUp ? 'signup_with' : 'signin_with',
     });
-  }, [
-    isOpen, otpStep, signupToken, activeTab, isSignUp, googleClientId,
-    studentPhone, studentAddress, studentAadhaar, studentCollege, studentRollNo,
-    corpPhone, corpCompanyName, passPhone,
-  ]);
+  }, [isOpen, otpStep, signupToken, activeTab, isSignUp, googleClientId]);
 
   // Dev testing helper for Google sign in when VITE_GOOGLE_CLIENT_ID is not configured
   const triggerDevGoogleAuth = (email: string, name?: string, picture?: string) => {
@@ -375,7 +375,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         rollNo: studentRollNo,
         fatherName: studentFatherName,
         permanentAddress: studentAddress,
-        aadhaarNumber: studentAadhaar,
+        aadhaarNumber: studentAadhaar ? `XXXX-XXXX-${studentAadhaar.replace(/\D/g, '').slice(-4)}` : '',
         avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
         roleType: 'student',
         roleTitle: 'Student • Subsidized Concession Pass Holder',
@@ -393,7 +393,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         rollNo: '887',
         fatherName: 'R. Prakash',
         permanentAddress: 'Kharar Road, Mohali, Punjab',
-        aadhaarNumber: '6666-6666-6666',
+        aadhaarNumber: 'XXXX-XXXX-6666',
         avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
         roleType: 'student',
         roleTitle: 'Student • Subsidized Concession Pass Holder',

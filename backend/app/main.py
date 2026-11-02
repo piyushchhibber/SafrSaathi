@@ -113,6 +113,15 @@ def camel(s: str) -> str:
     return parts[0] + "".join(p.capitalize() for p in parts[1:])
 
 
+def mask_aadhaar(val: str | None) -> str | None:
+    if not val:
+        return val
+    digits = re.sub(r"\D", "", val)
+    if len(digits) >= 4:
+        return f"XXXX-XXXX-{digits[-4:]}"
+    return val
+
+
 def serialize(obj, exclude=()):
     data = {}
     for c in obj.__table__.columns:
@@ -120,7 +129,9 @@ def serialize(obj, exclude=()):
             continue
         key = "from" if c.name == "from_location" else "to" if c.name == "to_location" else camel(c.name)
         val = getattr(obj, c.name)
-        if hasattr(val, "isoformat"):
+        if c.name == "aadhaar_number":
+            val = mask_aadhaar(val)
+        elif hasattr(val, "isoformat"):
             val = val.isoformat()
         data[key] = val
     return data
@@ -261,6 +272,10 @@ def auth_profile(body: AuthPayload, db: Session = Depends(get_db)):
             if not is_punjab_address(address):
                 raise HTTPException(status_code=403, detail="You are not eligible for the pass")
             p["isPunjabResident"] = True
+            if p.get("aadhaarNumber"):
+                clean_aadhaar = re.sub(r"\D", "", p.get("aadhaarNumber") or "")
+                if len(clean_aadhaar) >= 4:
+                    p["aadhaarNumber"] = f"XXXX-XXXX-{clean_aadhaar[-4:]}"
 
         pass_id = p.get("passId") or f"USR-{uuid.uuid4().hex[:8].upper()}"
         user = User(
@@ -439,8 +454,10 @@ def google_complete(body: GoogleCompletePayload, db: Session = Depends(get_db)):
     p = body.profile
     if not is_punjab_address(p.get("permanentAddress")):
         raise HTTPException(403, "You are not eligible: a permanent Punjab address is required")
-    if len(re.sub(r"\D", "", p.get("aadhaarNumber") or "")) != 12:
+    clean_aadhaar = re.sub(r"\D", "", p.get("aadhaarNumber") or "")
+    if len(clean_aadhaar) != 12:
         raise HTTPException(400, "Enter a valid 12-digit Aadhaar number")
+    p["aadhaarNumber"] = f"XXXX-XXXX-{clean_aadhaar[-4:]}"
 
     dob = (p.get("dateOfBirth") or p.get("dob") or "").strip()
     if dob:
@@ -481,6 +498,8 @@ def update_user(pass_id: str, body: GenericPayload, db: Session = Depends(get_db
             if not is_punjab_address(new_address):
                 raise HTTPException(status_code=403, detail="You are not eligible for the pass")
             body.data["isPunjabResident"] = True
+        if "aadhaarNumber" in body.data and body.data["aadhaarNumber"]:
+            body.data["aadhaarNumber"] = mask_aadhaar(body.data["aadhaarNumber"])
 
     blocked = ("id", "created_at", "password_hash", "pass_id", "role_type", "email")
     # Only PRTC admins may change which college an account belongs to
@@ -522,6 +541,9 @@ def create_app(body: GenericPayload, db: Session = Depends(get_db), actor: User 
     app_id = p.get("id") or f"app-{uuid.uuid4().hex[:10]}"
     if db.get(StudentApplication, app_id):
         raise HTTPException(409, "Application already exists")
+    raw_aadhaar = p.get("aadhaarNumber") or actor.aadhaar_number or ""
+    masked_aadhaar = mask_aadhaar(raw_aadhaar) or ""
+    p["aadhaarNumber"] = masked_aadhaar
     obj = StudentApplication(
         id=app_id,
         student_id=actor.id,
@@ -536,7 +558,7 @@ def create_app(body: GenericPayload, db: Session = Depends(get_db), actor: User 
         route=p.get("route") or "",
         status="pending",
         submitted_date=datetime.now().strftime("%d %b %Y"),
-        aadhaar_number=p.get("aadhaarNumber") or actor.aadhaar_number or "",
+        aadhaar_number=masked_aadhaar,
     )
     apply_payload(
         obj, p,

@@ -53,5 +53,5 @@ def create_signup_token(email: str, name: str, picture: str, role: str) -> str:
     return jwt.encode({
         "sub": email, "kind": "google_signup", "intendedRole": role,
         "name": name, "picture": picture,
-        "iat": now, "exp": now + timedelta(minutes=15),
+        "iat": now, "exp": now + timedelta(minutes=60),
     }, SECRET, algorithm=ALGORITHM)
