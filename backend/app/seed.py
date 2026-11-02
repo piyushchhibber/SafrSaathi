@@ -199,6 +199,20 @@ def run():
                 pu.college = 'Chandigarh Engineering College-CGC Landran'
             print(f"[SEED] Prakash user repaired: id={pu.id}, email={pu.email}, pass_id={pu.pass_id}")
 
+        # Delete any accidental/unrelated Thapar application for Prakash
+        thapar_dups = db.query(StudentApplication).filter(
+            ((StudentApplication.name.ilike('%prakash%')) |
+             (StudentApplication.student_id == 'usr-5337b7bde4b9') |
+             (StudentApplication.student_id == 'usr-prakash-gmail') |
+             (StudentApplication.student_id == 'PRTC-STU-887')) &
+            (StudentApplication.route.ilike('%thapar%') | StudentApplication.college_name.ilike('%thapar%'))
+        ).all()
+        for dup in thapar_dups:
+            print(f"[SEED] Deleting obsolete Prakash Thapar application: id={dup.id}, route={dup.route}")
+            db.delete(dup)
+        if thapar_dups:
+            db.commit()
+
         # Ensure Prakash application exists and is fully approved
         now_dt = datetime.now(timezone.utc)
         prakash_app = db.query(StudentApplication).filter(

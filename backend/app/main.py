@@ -522,6 +522,21 @@ def list_users(db: Session = Depends(get_db), actor: User = Depends(require_role
 # ---------------------------------------------------------------------------
 @app.get("/api/applications")
 def list_apps(db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    # Auto-clean any erroneous Thapar test applications linked to Prakash
+    if actor.role_type == "student" and "prakash" in actor.name.lower():
+        thapar_apps = db.scalars(
+            select(StudentApplication).where(
+                ((StudentApplication.student_id == actor.id)
+                 | (StudentApplication.student_id == actor.pass_id)
+                 | (StudentApplication.name.ilike(actor.name)))
+                & (StudentApplication.route.ilike("%thapar%") | StudentApplication.college_name.ilike("%thapar%"))
+            )
+        ).all()
+        for err_app in thapar_apps:
+            db.delete(err_app)
+        if thapar_apps:
+            db.commit()
+
     query = select(StudentApplication).order_by(StudentApplication.created_at.desc())
     if actor.role_type == "student":
         query = query.where(
@@ -534,6 +549,21 @@ def list_apps(db: Session = Depends(get_db), actor: User = Depends(current_user)
     elif actor.role_type not in {"prtc_admin"}:
         raise HTTPException(403, "You do not have permission to view applications")
     return [serialize(x, ("created_at",)) for x in db.scalars(query).all()]
+
+
+@app.delete("/api/applications/{app_id}")
+def delete_app(app_id: str, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    obj = db.get(StudentApplication, app_id)
+    if not obj:
+        raise HTTPException(404, "Application not found")
+    if actor.role_type == "student":
+        if obj.student_id not in {actor.id, actor.pass_id} and obj.name.lower() != actor.name.lower():
+            raise HTTPException(403, "You do not have permission to delete this application")
+    elif actor.role_type not in {"college_admin", "prtc_admin"}:
+        raise HTTPException(403, "Permission denied")
+    db.delete(obj)
+    db.commit()
+    return {"ok": True, "deleted": app_id}
 
 
 @app.post("/api/applications")
