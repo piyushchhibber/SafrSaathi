@@ -943,6 +943,7 @@ def verify_student_pass(
         "valid": True,
         "holderName": application.name,
         "rollNumber": application.roll_number,
+        "passId": application.pass_id or application.id,
         "route": application.route,
         "passType": application.pass_type,
         "avatarUrl": holder.avatar_url if holder else "",

@@ -42,6 +42,7 @@ export interface PassVerification {
   valid: boolean;
   holderName: string;
   rollNumber: string;
+  passId?: string;
   route: string;
   passType: string;
   avatarUrl?: string;
@@ -153,6 +154,7 @@ export const api = {
           valid: true,
           holderName: match.name,
           rollNumber: match.rollNumber || '887',
+          passId: match.passId || match.id,
           route: match.route,
           passType: match.passType || 'Subsidized Student Concession',
           avatarUrl: match.avatarUrl,

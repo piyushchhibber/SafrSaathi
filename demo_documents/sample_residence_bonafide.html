@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Punjab Resident Bonafide Student Declaration</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 25px; }
+    .form-container {
+      width: 650px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #cbd5e1;
+      padding: 35px;
+      position: relative;
+    }
+    .header { text-align: center; border-bottom: 2px solid #000666; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h2 { font-size: 15px; font-weight: 900; color: #000666; text-transform: uppercase; }
+    .header h3 { font-size: 13px; font-weight: 700; color: #1e293b; margin-top: 4px; }
+    .header p { font-size: 10px; color: #64748b; margin-top: 2px; }
+    .content-box { font-size: 12px; line-height: 1.8; color: #334155; text-align: justify; margin-bottom: 20px; }
+    .content-box p { margin-bottom: 12px; }
+    .data-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    .data-table td { padding: 8px; border: 1px solid #e2e8f0; font-size: 11.5px; }
+    .data-table td.label { background: #f8fafc; font-weight: 700; width: 35%; color: #475569; }
+    .data-table td.val { font-weight: 600; color: #0f172a; }
+    .declaration { background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; font-size: 11px; color: #92400e; margin-top: 15px; }
+    .footer-signs { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 35px; padding-top: 20px; border-top: 1px dashed #cbd5e1; }
+    .sign-col { text-align: center; font-size: 11px; color: #475569; }
+    .sign-line { font-family: cursive; font-size: 15px; color: #000666; margin-bottom: 5px; }
+    .controls { margin-top: 20px; }
+    .btn { background: #000666; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <div class="header">
+      <h2>Government of Punjab · Department of Transport</h2>
+      <h3>Pepsu Road Transport Corporation (PRTC)</h3>
+      <p>Student Subsidized Commute Concession Scheme · Bonafide Residency Declaration</p>
+    </div>
+
+    <div class="content-box">
+      <p>This is to verify and declare that the following candidate is a bonafide regular student residing in the State of Punjab and commuting daily to an affiliated educational institution on the sanctioned PRTC transport corridor.</p>
+
+      <table class="data-table">
+        <tr>
+          <td class="label">Full Name of Student</td>
+          <td class="val">Rohan Sharma</td>
+        </tr>
+        <tr>
+          <td class="label">Father's / Guardian's Name</td>
+          <td class="val">S. Anil Sharma</td>
+        </tr>
+        <tr>
+          <td class="label">Institution Enrolled</td>
+          <td class="val">Chandigarh Engineering College (CGC Landran, Mohali)</td>
+        </tr>
+        <tr>
+          <td class="label">College Roll No. / Branch</td>
+          <td class="val">892 / B.Tech Computer Science & Engineering</td>
+        </tr>
+        <tr>
+          <td class="label">Permanent Residential Address</td>
+          <td class="val">House No. 248, Phase 2, Urban Estate, Patiala, Punjab - 147002</td>
+        </tr>
+        <tr>
+          <td class="label">Concession Transit Route</td>
+          <td class="val">Kharar Bus Stand ⇄ CGC Landran Mohali Campus (Zone 1)</td>
+        </tr>
+        <tr>
+          <td class="label">Aadhaar Reference (Masked)</td>
+          <td class="val font-mono">XXXX-XXXX-9842 (Verified Punjab Resident)</td>
+        </tr>
+      </table>
+
+      <div class="declaration">
+        <strong>Self-Attestation & Undertaking:</strong><br>
+        I hereby affirm that the information furnished above is authentic and correct. I am a bonafide daily student commuter. Any false representation shall forfeit my PRTC transit concession rights and be subject to institutional disciplinary action.
+      </div>
+    </div>
+
+    <div class="footer-signs">
+      <div class="sign-col">
+        <div class="sign-line">Rohan Sharma</div>
+        <strong>Signature of Applicant</strong><br>
+        Date: 15 Jan 2026
+      </div>
+      <div class="sign-col">
+        <div class="sign-line">Dr. D. Sharma</div>
+        <strong>Attesting Principal / Dean</strong><br>
+        CGC Landran Official Attestation Seal
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="window.print()">Print or Save as PDF</button>
+  </div>
+
+</body>
+</html>

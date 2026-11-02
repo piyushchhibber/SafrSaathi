@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CGC Landran - Official Fee Receipt</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 25px; }
+    .receipt {
+      width: 600px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #cbd5e1;
+      padding: 30px;
+      position: relative;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #000666;
+      padding-bottom: 15px;
+    }
+    .inst-title h1 { font-size: 16px; font-weight: 900; color: #000666; text-transform: uppercase; }
+    .inst-title p { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .receipt-badge { text-align: right; }
+    .badge { background: #e0e7ff; color: #000666; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .rec-no { font-size: 10px; color: #64748b; margin-top: 5px; font-family: monospace; font-weight: bold; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 12px; }
+    .meta-row { display: flex; justify-content: space-between; padding: 3px 0; }
+    .meta-label { color: #64748b; font-weight: 600; }
+    .meta-val { font-weight: 700; color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+    th { background: #000666; color: white; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; }
+    td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+    .total-row td { font-weight: 900; background: #f8fafc; border-top: 2px solid #000666; font-size: 13px; }
+    .footer-stamp { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #cbd5e1; }
+    .stamp-box { border: 2px dashed #059669; padding: 8px 14px; border-radius: 8px; color: #059669; text-align: center; }
+    .stamp-box .stamp-title { font-weight: 900; font-size: 12px; text-transform: uppercase; }
+    .stamp-box .stamp-sub { font-size: 9px; font-weight: 700; }
+    .sign-box { text-align: right; font-size: 11px; color: #475569; }
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 42px;
+      font-weight: 900;
+      color: rgba(0, 6, 102, 0.03);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .controls { margin-top: 20px; }
+    .btn { background: #000666; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="receipt">
+    <div class="watermark">OFFICIAL SPECIMEN</div>
+    <div class="header">
+      <div class="inst-title">
+        <h1>Chandigarh Engineering College</h1>
+        <p>CGC Campus, Landran, Mohali · Accounts & Finance Branch</p>
+      </div>
+      <div class="receipt-badge">
+        <span class="badge">Semester Fee Receipt</span>
+        <div class="rec-no">REC: CEC-2026-8924</div>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div>
+        <div class="meta-row"><span class="meta-label">Student Name:</span><span class="meta-val">Rohan Sharma</span></div>
+        <div class="meta-row"><span class="meta-label">Father's Name:</span><span class="meta-val">S. Anil Sharma</span></div>
+        <div class="meta-row"><span class="meta-label">Roll Number:</span><span class="meta-val">892</span></div>
+      </div>
+      <div>
+        <div class="meta-row"><span class="meta-label">Course:</span><span class="meta-val">B.Tech (CSE)</span></div>
+        <div class="meta-row"><span class="meta-label">Academic Session:</span><span class="meta-val">2026-27 (Sem 4)</span></div>
+        <div class="meta-row"><span class="meta-label">Payment Date:</span><span class="meta-val">15 Jan 2026</span></div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Particulars / Fee Head</th>
+          <th style="text-align: right;">Amount (INR)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tuition & Academic Training Fee (Sem 4)</td>
+          <td style="text-align: right;">₹48,500.00</td>
+        </tr>
+        <tr>
+          <td>University Development & Lab Amenity Charges</td>
+          <td style="text-align: right;">₹4,200.00</td>
+        </tr>
+        <tr>
+          <td>Library, Sports & Student Welfare Fund</td>
+          <td style="text-align: right;">₹1,800.00</td>
+        </tr>
+        <tr>
+          <td>PRTC Transit Enrolment Attestation Levy</td>
+          <td style="text-align: right;">₹250.00</td>
+        </tr>
+        <tr class="total-row">
+          <td>Total Net Paid (Online HDFC PG)</td>
+          <td style="text-align: right;">₹54,750.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footer-stamp">
+      <div class="stamp-box">
+        <div class="stamp-title">PAID & VERIFIED</div>
+        <div class="stamp-sub">CGC ACCOUNTS DEPT • IKG-PTU</div>
+        <div class="stamp-sub">TXN: HDFC-9821839210</div>
+      </div>
+      <div class="sign-box">
+        <span style="font-family: cursive; font-size: 14px; display: block; color: #000666;">S. K. Verma</span>
+        Authorized Finance Officer<br>
+        Chandigarh Group of Colleges, Landran
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="window.print()">Print or Save as PDF</button>
+  </div>
+
+</body>
+</html>

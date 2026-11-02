@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CGC Landran - Student Identity Card (Sample Specimen)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #eef2f6; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .card {
+      width: 420px;
+      height: 265px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 10, 80, 0.15);
+      border: 1px solid #c6d0e8;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: #000666;
+      color: white;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 3px solid #f59e0b;
+    }
+    .logo-badge {
+      width: 38px;
+      height: 38px;
+      background: #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #000666;
+      font-size: 13px;
+      letter-spacing: -1px;
+    }
+    .header-text h1 { font-size: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+    .header-text p { font-size: 9px; color: #cbd5e1; }
+    .body { display: flex; padding: 12px 14px; gap: 14px; flex: 1; }
+    .photo-box {
+      width: 90px;
+      height: 115px;
+      border: 2px solid #000666;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+    .info { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .name { font-size: 15px; font-weight: 900; color: #0f172a; }
+    .badge { display: inline-block; background: #e0e7ff; color: #3730a3; font-size: 8px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-top: 2px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin-top: 6px; font-size: 9.5px; }
+    .label { color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 8px; }
+    .val { font-weight: 700; color: #1e293b; }
+    .footer {
+      background: #f1f5f9;
+      border-top: 1px solid #e2e8f0;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .barcode { font-family: monospace; font-size: 11px; letter-spacing: 3px; font-weight: 800; color: #0f172a; }
+    .sign { text-align: right; font-size: 8px; font-weight: 700; color: #475569; }
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 32px;
+      font-weight: 900;
+      color: rgba(0, 6, 102, 0.04);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .controls { margin-top: 18px; display: flex; gap: 12px; }
+    .btn { background: #000666; color: white; border: none; padding: 8px 18px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="id-card">
+    <div class="watermark">SAMPLE SPECIMEN</div>
+    <div class="header">
+      <div class="logo-badge">CGC</div>
+      <div class="header-text">
+        <h1>Chandigarh Group of Colleges</h1>
+        <p>Landran, Mohali (Punjab) · Affiliated to IKG-PTU</p>
+      </div>
+    </div>
+    
+    <div class="body">
+      <div class="photo-box">
+        <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300&auto=format&fit=crop&q=80" alt="Student Photo">
+      </div>
+      <div class="info">
+        <div>
+          <div class="name">Rohan Sharma</div>
+          <span class="badge">Student • B.Tech CSE</span>
+        </div>
+        <div class="grid">
+          <div><div class="label">Roll Number</div><div class="val">892</div></div>
+          <div><div class="label">Student ID</div><div class="val">CGC-2024-892</div></div>
+          <div><div class="label">Session</div><div class="val">2024 - 2028</div></div>
+          <div><div class="label">Semester</div><div class="val">Semester 4</div></div>
+          <div><div class="label">Bus Stop</div><div class="val">Kharar Stand</div></div>
+          <div><div class="label">Blood Group</div><div class="val">B+ Positive</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="barcode">|||| ||| ||||| |||| ||</div>
+      <div class="sign">
+        <span style="font-family: cursive; font-size: 11px; display: block; color: #000666;">D. Sharma</span>
+        Registrar / Campus Seal
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="window.print()">Print or Save as PDF</button>
+  </div>
+
+</body>
+</html>
