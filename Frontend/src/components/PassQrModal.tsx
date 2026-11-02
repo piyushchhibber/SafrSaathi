@@ -362,9 +362,6 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
               </div>
             </div>
             )}
-            <div className="text-[10px] font-mono text-[#767683] mt-2">
-              SECURITY CODE: {displayPassId}
-            </div>
           </div>
 
           {/* Details */}
