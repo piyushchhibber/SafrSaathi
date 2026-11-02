@@ -163,7 +163,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(initialRoleType || initialRole || 'student');
+      const targetRole = initialRoleType || initialRole || 'student';
+      setActiveTab(targetRole);
       setIsSignUp(false);
       setOtpStep(false);
       setSignupToken('');
@@ -175,6 +176,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setShowDevAccountPicker(false);
       setOtpError(null);
       setPunjabError(null);
+
+      if (targetRole === 'conductor') {
+        setPrtcAdminId('PRTC-CRW-221');
+        setPrtcEmail('harpreet.singh@prtc.punjab.gov.in');
+        setPrtcPassword('password123');
+      } else if (targetRole === 'prtc_admin') {
+        setPrtcAdminId('PRTC-PAT-HQ-091');
+        setPrtcEmail('g.singh@prtc.punjab.gov.in');
+        setPrtcPassword('password123');
+      }
     }
   }, [isOpen, initialRole, initialRoleType]);
 
@@ -473,6 +484,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     triggerOtpVerification(prtcProfile, isConductor ? 'conductor' : 'prtc_admin', prtcPhone || '+91 98140 11223');
   };
 
+  const handleInstantConductorLogin = async () => {
+    const conductorProfile: UserProfile = {
+      name: 'Harpreet Singh',
+      passId: 'PRTC-CRW-221',
+      email: 'harpreet.singh@prtc.punjab.gov.in',
+      phone: '+91 98140 11223',
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+      roleType: 'conductor',
+      institution: 'Pepsu Road Transport Corporation (Govt. of Punjab)',
+      prtcAdminId: 'PRTC-CRW-221',
+      depotZone: 'Patiala Central HQ',
+      roleTitle: 'PRTC Bus Conductor • Digital Pass Verification',
+    };
+    try {
+      const authRes = await api.authenticateProfile(conductorProfile, 'password123', 'login');
+      localStorage.setItem('prtc_access_token', authRes.accessToken);
+      fireSuccess(authRes.profile, 'conductor');
+    } catch {
+      fireSuccess(conductorProfile, 'conductor');
+    }
+    confetti({ particleCount: 90, spread: 60, origin: { y: 0.6 } });
+    handleModalClose();
+  };
+
   const handleOtpChange = (index: number, val: string) => {
     if (val.length > 1) {
       val = val.slice(-1);
@@ -677,6 +712,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setIsSignUp(false);
                     setPunjabError(null);
                     setOtpError(null);
+                    if (tab.id === 'conductor') {
+                      setPrtcAdminId('PRTC-CRW-221');
+                      setPrtcEmail('harpreet.singh@prtc.punjab.gov.in');
+                      setPrtcPassword('password123');
+                    } else if (tab.id === 'prtc_admin') {
+                      setPrtcAdminId('PRTC-PAT-HQ-091');
+                      setPrtcEmail('g.singh@prtc.punjab.gov.in');
+                      setPrtcPassword('password123');
+                    }
                   }}
                   className={`py-2 px-1 rounded-xl text-[11px] font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1 ${
                     activeTab === tab.id
@@ -1742,9 +1786,106 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </form>
               )}
 
-              {/* 5. PRTC ADMIN FORM */}
+              {/* 5. PRTC ADMIN / CONDUCTOR FORM */}
               {(activeTab === 'prtc_admin' || activeTab === 'conductor') && (
-                <form onSubmit={handlePrtcAdminSubmit} className="space-y-4">
+                <>
+                  {activeTab === 'conductor' && (
+                    <div className="mb-4 bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-4 shadow-xs space-y-2.5 animate-in fade-in">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                            <span className="material-symbols-outlined text-base">badge</span>
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-emerald-950 block">Conductor Demo Credentials</span>
+                            <span className="text-[10px] text-emerald-800 font-bold">Harpreet Singh • PRTC Onboard Verification Crew</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPrtcAdminId('PRTC-CRW-221');
+                              setPrtcEmail('harpreet.singh@prtc.punjab.gov.in');
+                              setPrtcPassword('password123');
+                            }}
+                            className="px-2.5 py-1.5 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-xs">edit_note</span>
+                            Auto-Fill
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleInstantConductorLogin}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-black shadow-xs transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-xs">bolt</span>
+                            1-Click Login
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1 border-t border-emerald-200">
+                        <div className="bg-white/90 p-2 rounded-xl border border-emerald-200">
+                          <span className="text-[9px] uppercase font-bold text-[#767683] block">Crew Pass ID</span>
+                          <code className="font-mono font-black text-emerald-900 text-xs">PRTC-CRW-221</code>
+                        </div>
+                        <div className="bg-white/90 p-2 rounded-xl border border-emerald-200 truncate">
+                          <span className="text-[9px] uppercase font-bold text-[#767683] block">Official Email</span>
+                          <code className="font-mono font-bold text-emerald-900 text-[10px] truncate block">harpreet.singh@prtc.punjab.gov.in</code>
+                        </div>
+                        <div className="bg-white/90 p-2 rounded-xl border border-emerald-200">
+                          <span className="text-[9px] uppercase font-bold text-[#767683] block">Password / OTP</span>
+                          <code className="font-mono font-black text-emerald-900 text-xs">password123 • OTP: 0000</code>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'prtc_admin' && (
+                    <div className="mb-4 bg-blue-50 border-2 border-blue-300 rounded-2xl p-4 shadow-xs space-y-2.5 animate-in fade-in">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-[#000666] text-white flex items-center justify-center font-black text-xs shadow-xs">
+                            <span className="material-symbols-outlined text-base">shield_person</span>
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-blue-950 block">PRTC State Authority Credentials</span>
+                            <span className="text-[10px] text-blue-800 font-bold">S. Gurmukh Singh • Pass Sanctioning Authority</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPrtcAdminId('PRTC-PAT-HQ-091');
+                            setPrtcEmail('g.singh@prtc.punjab.gov.in');
+                            setPrtcPassword('password123');
+                          }}
+                          className="px-2.5 py-1.5 bg-white hover:bg-blue-100 text-[#000666] border border-blue-300 rounded-xl text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-xs">edit_note</span>
+                          Auto-Fill
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1 border-t border-blue-200">
+                        <div className="bg-white/90 p-2 rounded-xl border border-blue-200">
+                          <span className="text-[9px] uppercase font-bold text-[#767683] block">Admin ID</span>
+                          <code className="font-mono font-black text-blue-900 text-xs">PRTC-PAT-HQ-091</code>
+                        </div>
+                        <div className="bg-white/90 p-2 rounded-xl border border-blue-200 truncate">
+                          <span className="text-[9px] uppercase font-bold text-[#767683] block">Email</span>
+                          <code className="font-mono font-bold text-blue-900 text-[10px] truncate block">g.singh@prtc.punjab.gov.in</code>
+                        </div>
+                        <div className="bg-white/90 p-2 rounded-xl border border-blue-200">
+                          <span className="text-[9px] uppercase font-bold text-[#767683] block">Password / OTP</span>
+                          <code className="font-mono font-black text-blue-900 text-xs">password123 • OTP: 0000</code>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handlePrtcAdminSubmit} className="space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-[#c6c5d4]">
                     <div>
                       <h4 className="font-bold text-sm text-[#1b1c1c]">
@@ -1881,9 +2022,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="w-full bg-[#000666] text-white py-3 rounded-xl font-bold text-xs hover:bg-[#1a237e] transition shadow-md flex items-center justify-center gap-2 mt-4"
                   >
                     <span className="material-symbols-outlined text-sm">security</span>
-                    {isSignUp ? 'Register PRTC State Admin' : 'Sign In with Unique Admin ID'}
+                    {isSignUp ? (activeTab === 'conductor' ? 'Register PRTC Crew Member' : 'Register PRTC State Admin') : (activeTab === 'conductor' ? 'Sign In as Conductor' : 'Sign In with Unique Admin ID')}
                   </button>
                 </form>
+                </>
               )}
             </>
           )}
