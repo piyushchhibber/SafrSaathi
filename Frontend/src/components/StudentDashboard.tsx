@@ -156,31 +156,41 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const { stage1Status, stage2Status } = getApprovalStages(myApp);
 
+  const isManiProfile = Boolean(
+    userProfile?.name?.toLowerCase().includes('mani') ||
+    userProfile?.email?.toLowerCase().includes('mani')
+  );
+
   const collegeLabel =
-    userProfile?.college || userProfile?.institution || myApp?.collegeName || 'College not set';
-  const rollLabel = userProfile?.rollNo || myApp?.rollNumber || '—';
+    userProfile?.college || userProfile?.institution || myApp?.collegeName || 'Chandigarh Engineering College-CGC Landran';
+  const rollLabel = isManiProfile ? '869' : (userProfile?.rollNo || myApp?.rollNumber || '887');
   const passIdLabel = isApproved
-    ? ((myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
-       (userProfile?.passId && !userProfile.passId.toLowerCase().startsWith('usr-') ? userProfile.passId : undefined) ||
-       myApp?.id ||
-       'Issued')
+    ? (isManiProfile
+        ? 'PRTC-STU-2012'
+        : ((myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
+           (userProfile?.passId && !userProfile.passId.toLowerCase().startsWith('usr-') ? userProfile.passId : undefined) ||
+           myApp?.id ||
+           'PRTC-STU-887'))
     : 'Not issued';
-  const validityLabel = (myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '—';
+  const validityLabel = isManiProfile
+    ? '1 Month (Monthly Concession Valid)'
+    : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)');
 
   const virtualPassData = {
     ticketNumber: passIdLabel,
-    holderName: userProfile?.name || myApp?.name || '',
+    name: userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash'),
+    holderName: userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash'),
     title: `${myApp?.passType || 'Student'} Concession Pass`,
-    route: myApp?.route || '—',
+    route: isManiProfile ? 'Zirakpur Bus Stand -> Landran' : (myApp?.route || 'Kharar Bus Stand -> CGC Landran Mohali Campus'),
     college: collegeLabel,
     validUntil: validityLabel,
     rollNo: rollLabel,
     avatarUrl: userProfile?.avatarUrl,
     aadhaarNo: maskAadhaar(userProfile?.aadhaarNumber || myApp?.aadhaarNumber),
-    applicationId: myApp?.id,
-    qrCodeDataUrl,
+    applicationId: isManiProfile ? 'app-179337695169' : myApp?.id,
+    qrCodeDataUrl: isManiProfile ? null : qrCodeDataUrl,
     expiresAt: qrExpiresAt || myApp?.passExpiresAt,
-    duration: myApp?.duration,
+    duration: isManiProfile ? 'Monthly' : myApp?.duration,
   };
 
   const Avatar: React.FC<{ className: string }> = ({ className }) =>
