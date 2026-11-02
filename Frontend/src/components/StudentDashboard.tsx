@@ -195,12 +195,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-[#1b1c1c] tracking-tight">{userProfile.name}</h2>
               <span className="text-[10px] bg-blue-100 text-[#000666] font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
-                STUDENT
+                {t('student.studentBadge', 'STUDENT')}
               </span>
             </div>
             <p className="text-xs text-[#454652] mt-0.5 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm text-[#000666]">school</span>
-              {collegeLabel} • Roll No: {rollLabel}
+              {collegeLabel} • {t('student.rollNo', 'Roll No.')}: {rollLabel}
             </p>
           </div>
         </div>
@@ -211,14 +211,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-[#c6c5d4] hover:bg-[#eae8e7] text-xs font-bold text-[#1b1c1c] transition flex items-center justify-center gap-1.5"
           >
             <span className="material-symbols-outlined text-sm">edit_square</span>
-            Edit Profile
+            {t('student.editProfile', 'Edit Profile')}
           </button>
           <button
             onClick={onOpenApplicationModal}
             className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#000666] hover:bg-[#1a237e] text-white text-xs font-extrabold transition shadow-md flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-sm">post_add</span>
-            Apply for Pass Concession
+            {t('student.applyConcession', 'Apply for Pass Concession')}
           </button>
         </div>
       </div>
@@ -230,15 +230,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-[#1b1c1c] uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-[#000666] text-lg">badge</span>
-              Virtual Student Transit Pass
+              {t('student.virtualPassTitle', 'Virtual Student Transit Pass')}
             </h3>
             {isApproved ? (
               <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200">
-                Live Active QR
+                {t('student.liveActiveQr', 'Live Active QR')}
               </span>
             ) : (
               <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                Pass Not Issued
+                {t('student.passNotIssued', 'Pass Not Issued')}
               </span>
             )}
           </div>
@@ -254,16 +254,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-extrabold tracking-widest uppercase bg-white/20 px-2 py-0.5 rounded text-white">
-                    Govt. of Punjab • PRTC
+                    {t('student.govtPunjab', 'Govt. of Punjab • PRTC')}
                   </span>
                   <span className="text-[10px] bg-amber-400 text-black font-black px-1.5 py-0.5 rounded">
-                    75% SUBSIDY
+                    {t('student.subsidyBadge', '75% SUBSIDY')}
                   </span>
                 </div>
                 <h4 className="font-extrabold text-sm sm:text-base mt-1 text-white tracking-tight">
-                  PEPSU ROAD TRANSPORT CORPORATION
+                  {t('student.prtcFullName', 'PEPSU ROAD TRANSPORT CORPORATION')}
                 </h4>
-                <p className="text-[11px] text-[#bdc2ff]">State Student Subsidized Commute Card</p>
+                <p className="text-[11px] text-[#bdc2ff]">{t('student.cardSub', 'State Student Subsidized Commute Card')}</p>
               </div>
 
               <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
@@ -277,7 +277,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <Avatar className="w-20 h-24 rounded-2xl object-cover border-2 border-white/40 shadow-md bg-white/10" />
                 {isApproved && (
                   <div className="absolute -bottom-1.5 -left-1.5 bg-[#138808] text-white text-[8px] font-black px-1 py-0.5 rounded uppercase">
-                    Verified
+                    {t('student.verified', 'Verified')}
                   </div>
                 )}
               </div>
@@ -289,11 +289,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <p className="text-xs text-[#bdc2ff] font-medium leading-tight">{collegeLabel}</p>
                 <div className="pt-1 grid grid-cols-2 gap-1 text-[11px]">
                   <div>
-                    <span className="text-white/60 block text-[9px] uppercase font-bold">Roll No.</span>
+                    <span className="text-white/60 block text-[9px] uppercase font-bold">{t('student.rollNo', 'Roll No.')}</span>
                     <span className="font-mono font-bold text-white">{rollLabel}</span>
                   </div>
                   <div>
-                    <span className="text-white/60 block text-[9px] uppercase font-bold">Pass ID</span>
+                    <span className="text-white/60 block text-[9px] uppercase font-bold">{t('student.passId', 'Pass ID')}</span>
                     <span className="font-mono font-bold text-amber-300">{passIdLabel}</span>
                   </div>
                 </div>
@@ -303,16 +303,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             {/* Approved Route Banner */}
             <div className="mt-4 bg-black/30 border border-white/10 rounded-2xl p-3">
               <div className="flex items-center justify-between text-[10px] text-white/70 font-bold uppercase tracking-wider mb-1">
-                <span>Sanctioned Route</span>
+                <span>{t('student.sanctionedRoute', 'Sanctioned Route')}</span>
                 <span className="text-amber-300">{myApp?.passType || '—'}</span>
               </div>
               <p className="text-xs font-bold text-white leading-snug">
-                {myApp?.route || 'No route sanctioned yet'}
+                {myApp?.route || t('student.noRouteSanctioned', 'No route sanctioned yet')}
               </p>
               <div className="mt-2 flex items-center justify-between text-[10px] text-[#bdc2ff] border-t border-white/10 pt-1.5">
-                <span>Validity: {validityLabel}</span>
+                <span>{t('student.validity', 'Validity')}: {validityLabel}</span>
                 {myApp?.isPunjabResident && (
-                  <span className="text-green-400 font-bold">Punjab Resident Verified</span>
+                  <span className="text-green-400 font-bold">{t('student.punjabResidentVerified', 'Punjab Resident Verified')}</span>
                 )}
               </div>
             </div>
@@ -342,18 +342,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     ></span>
                     <span className="text-xs font-black text-[#000666]">
                       {qrLoading
-                        ? 'LOADING QR…'
+                        ? t('student.loadingQr', 'LOADING QR…')
                         : qrCodeDataUrl
-                        ? 'LIVE CONDUCTOR QR'
+                        ? t('student.liveConductorQr', 'LIVE CONDUCTOR QR')
                         : isApproved
-                        ? 'QR UNAVAILABLE'
-                        : 'QR NOT ISSUED'}
+                        ? t('student.qrUnavailable', 'QR UNAVAILABLE')
+                        : t('student.qrNotIssued', 'QR NOT ISSUED')}
                     </span>
                   </div>
                   <p className="text-[10px] text-[#767683] mt-0.5">
                     {isApproved
-                      ? 'Signed PRTC Digital Transit Token'
-                      : 'Issued after PRTC approval'}
+                      ? t('student.signedTokenDesc', 'Signed PRTC Digital Transit Token')
+                      : t('student.issuedAfterApproval', 'Issued after PRTC approval')}
                   </p>
                 </div>
               </div>
@@ -363,7 +363,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 disabled={!isApproved}
                 className="px-3 py-1.5 rounded-xl bg-[#000666] text-white font-bold text-xs hover:bg-[#1a237e] transition shadow-xs shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Scan / Enlarge
+                {t('student.scanEnlarge', 'Scan / Enlarge')}
               </button>
             </div>
           </div>
@@ -374,9 +374,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-[#1b1c1c] uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-[#000666] text-lg">track_changes</span>
-              Concession Application Status Tracker
+              {t('student.statusTrackerTitle', 'Concession Application Status Tracker')}
             </h3>
-            <span className="text-xs text-[#767683]">Ref ID: {myApp?.id ? `#${myApp.id}` : '—'}</span>
+            <span className="text-xs text-[#767683]">{t('student.refId', 'Ref ID')}: {myApp?.id ? `#${myApp.id}` : '—'}</span>
           </div>
 
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#c6c5d4] shadow-xs space-y-6">
@@ -384,19 +384,19 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#fbf9f8] border border-[#c6c5d4]">
               <div>
                 <span className="text-[10px] uppercase font-bold text-[#767683] tracking-wider">
-                  Current Pipeline Status
+                  {t('student.currentPipelineStatus', 'Current Pipeline Status')}
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
                   <h4 className="text-base font-black text-[#1b1c1c]">
                     {!myApp
-                      ? 'No Application Submitted'
+                      ? t('student.noAppSubmitted', 'No Application Submitted')
                       : myApp.status === 'approved'
-                      ? 'Pass Sanctioned & Issued'
+                      ? t('student.passSanctionedIssued', 'Pass Sanctioned & Issued')
                       : myApp.status === 'college_approved'
-                      ? 'College Approved • Under PRTC Review'
+                      ? t('student.collegeApprovedUnderReview', 'College Approved • Under PRTC Review')
                       : myApp.status === 'rejected'
-                      ? 'Application Rejected'
-                      : 'Pending College Attestation'}
+                      ? t('student.appRejected', 'Application Rejected')
+                      : t('student.pendingCollegeAttestation', 'Pending College Attestation')}
                   </h4>
                   {myApp && (
                     <span
@@ -410,7 +410,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {myApp.status.toUpperCase().replace(/_/g, ' ')}
+                      {myApp.status === 'approved'
+                        ? t('common.approved', 'APPROVED')
+                        : myApp.status === 'rejected'
+                        ? t('common.rejected', 'REJECTED')
+                        : t('common.pending', 'PENDING')}
                     </span>
                   )}
                 </div>
@@ -420,9 +424,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </div>
 
               <div className="text-right">
-                <span className="text-[10px] text-[#767683] block">Submitted On</span>
+                <span className="text-[10px] text-[#767683] block">{t('student.submittedOn', 'Submitted On')}</span>
                 <span className="text-xs font-bold text-[#1b1c1c]">
-                  {myApp?.submittedDate || 'Not submitted'}
+                  {myApp?.submittedDate || t('student.notSubmitted', 'Not submitted')}
                 </span>
               </div>
             </div>
@@ -459,7 +463,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-extrabold text-xs sm:text-sm text-[#1b1c1c]">
-                          Stage 1: College Admin Attestation & Seal
+                          {t('student.stage1Title', 'Stage 1: College Admin Attestation & Seal')}
                         </h4>
                         <span
                           className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
@@ -471,14 +475,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           }`}
                         >
                           {stage1Status === 'approved'
-                            ? 'Stamped & Verified'
+                            ? t('student.stampedVerified', 'Stamped & Verified')
                             : stage1Status === 'rejected'
-                            ? 'Rejected'
-                            : 'Awaiting Review'}
+                            ? t('student.appRejected', 'Rejected')
+                            : t('student.awaitingReview', 'Awaiting Review')}
                         </span>
                       </div>
                       <p className="text-[11px] text-[#454652] mt-0.5">
-                        Verification of student enrolment, fee receipt, and bonafide Punjab residency by institution.
+                        {t('student.stage1Desc', 'Verification of student enrolment, fee receipt, and bonafide Punjab residency by institution.')}
                       </p>
                     </div>
                   </div>
@@ -493,22 +497,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-black text-[#000666] uppercase">
-                            Official College Seal Applied
+                            {t('student.officialCollegeSeal', 'Official College Seal Applied')}
                           </span>
                           <span className="text-[9px] bg-blue-100 text-[#000666] font-mono px-1.5 rounded">
                             {myApp?.collegeStampId || '—'}
                           </span>
                         </div>
                         <p className="text-xs font-bold text-[#1b1c1c]">
-                          Attested by: {myApp?.collegeVerifiedBy || '—'}
+                          {t('student.attestedBy', 'Attested by:')} {myApp?.collegeVerifiedBy || '—'}
                         </p>
                         <p className="text-[10px] text-[#767683]">
-                          Verified Date: {myApp?.collegeVerifiedDate || '—'}
+                          {t('student.verifiedDate', 'Verified Date:')} {myApp?.collegeVerifiedDate || '—'}
                         </p>
                       </div>
                     </div>
                     <span className="text-[10px] bg-green-50 text-green-800 font-bold px-2 py-1 rounded border border-green-200">
-                      College Cleared ✓
+                      {t('student.collegeCleared', 'College Cleared ✓')}
                     </span>
                   </div>
                 )}
@@ -544,7 +548,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-extrabold text-xs sm:text-sm text-[#1b1c1c]">
-                          Stage 2: PRTC Depot Sanction & Digital Token Issue
+                          {t('student.stage2Title', 'Stage 2: PRTC Depot Sanction & Digital Token Issue')}
                         </h4>
                         <span
                           className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
@@ -558,16 +562,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           }`}
                         >
                           {stage2Status === 'approved'
-                            ? 'Sanctioned & Active'
+                            ? t('student.sanctionedActive', 'Sanctioned & Active')
                             : stage2Status === 'rejected'
-                            ? 'Rejected'
+                            ? t('student.appRejected', 'Rejected')
                             : stage1Status === 'approved'
-                            ? 'In Depot Queue'
-                            : 'Waiting Stage 1'}
+                            ? t('student.inDepotQueue', 'In Depot Queue')
+                            : t('student.waitingStage1', 'Waiting Stage 1')}
                         </span>
                       </div>
                       <p className="text-[11px] text-[#454652] mt-0.5">
-                        Route tariff calculation, transit zone clearance, and QR cryptographic signature emission by State Transport Authority.
+                        {t('student.stage2Desc', 'Route tariff calculation, transit zone clearance, and QR cryptographic signature emission by State Transport Authority.')}
                       </p>
                     </div>
                   </div>
@@ -582,22 +586,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-black text-green-800 uppercase">
-                            State Transit Seal Issued
+                            {t('student.stateTransitSeal', 'State Transit Seal Issued')}
                           </span>
                           <span className="text-[9px] bg-green-100 text-green-800 font-mono px-1.5 rounded">
                             {myApp?.prtcAdminId || '—'}
                           </span>
                         </div>
                         <p className="text-xs font-bold text-[#1b1c1c]">
-                          Sanctioned by: {myApp?.prtcVerifiedBy || '—'}
+                          {t('student.sanctionedBy', 'Sanctioned by:')} {myApp?.prtcVerifiedBy || '—'}
                         </p>
                         <p className="text-[10px] text-[#767683]">
-                          Approval Date: {myApp?.prtcVerifiedDate || '—'}
+                          {t('student.approvalDate', 'Approval Date:')} {myApp?.prtcVerifiedDate || '—'}
                         </p>
                       </div>
                     </div>
                     <span className="text-[10px] bg-green-600 text-white font-black px-2.5 py-1 rounded shadow-xs">
-                      ISSUED
+                      {t('student.issued', 'ISSUED')}
                     </span>
                   </div>
                 )}
@@ -608,7 +612,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="pt-2 border-t border-[#eae8e7]">
               <h4 className="text-xs font-extrabold text-[#1b1c1c] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-sm text-[#000666]">folder_open</span>
-                Your Submitted Verification Documents
+                {t('student.submittedDocsTitle', 'Your Submitted Verification Documents')}
               </h4>
 
               {myApp ? (
@@ -629,7 +633,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       </div>
                       <div>
                         <span className="text-xs font-bold text-[#1b1c1c] block group-hover:text-[#000666]">
-                          Aadhaar (Signed Copy)
+                          {t('student.aadhaarCopy', 'Aadhaar (Signed Copy)')}
                         </span>
                         <span className="text-[10px] font-mono text-[#767683]">
                           {maskAadhaar(myApp.aadhaarNumber)}
@@ -657,7 +661,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       </div>
                       <div>
                         <span className="text-xs font-bold text-[#1b1c1c] block group-hover:text-[#000666]">
-                          Latest Fee Receipt
+                          {t('student.latestFeeReceipt', 'Latest Fee Receipt')}
                         </span>
                         <span className="text-[10px] font-mono text-[#767683]">
                           {myApp.feeReceiptNo || '—'}
@@ -671,7 +675,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
               ) : (
                 <p className="text-[11px] text-[#767683]">
-                  Documents will appear here after you submit a concession application.
+                  {t('student.docAppearNotice', 'Documents will appear here after you submit a concession application.')}
                 </p>
               )}
             </div>
@@ -709,7 +713,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 onClick={() => setSelectedDocPreview(null)}
                 className="px-4 py-2 rounded-xl bg-[#000666] text-white text-xs font-bold hover:bg-[#1a237e]"
               >
-                Close Preview
+                {t('student.closePreview', 'Close Preview')}
               </button>
             </div>
           </div>

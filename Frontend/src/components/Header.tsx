@@ -27,12 +27,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [profileOpen, setProfileOpen] = useState(false);
 
   const roleOptions: { key: PortalRole; label: string; icon: string; desc: string; badge?: string }[] = [
-    { key: 'gateway', label: 'Central Gateway', icon: 'apps', desc: '5-Role selection hub' },
-    { key: 'student', label: 'Student Dashboard', icon: 'school', desc: 'Virtual pass & concession status', badge: 'Student' },
-    { key: 'corporate', label: 'Corporate Dashboard', icon: 'business', desc: 'Monthly passes & employee roster', badge: 'Corporate' },
-    { key: 'passenger', label: 'Passenger Dashboard', icon: 'person', desc: 'Direct & 1-day tickets', badge: 'Passenger' },
-    { key: 'college_admin', label: 'College Admin Desk', icon: 'account_balance', desc: 'Student reviews & college stamp', badge: 'College' },
-    { key: 'prtc_admin', label: 'PRTC Admin Portal', icon: 'local_police', desc: 'College lists & depot sanctions', badge: 'PRTC HQ' },
+    { key: 'gateway', label: t('nav.roles.gateway', 'Central Gateway'), icon: 'apps', desc: t('nav.roles.gatewayDesc', '5-Role selection hub') },
+    { key: 'student', label: t('nav.roles.student', 'Student Dashboard'), icon: 'school', desc: t('nav.roles.studentDesc', 'Virtual pass & concession status'), badge: 'Student' },
+    { key: 'corporate', label: t('nav.roles.corporate', 'Corporate Dashboard'), icon: 'business', desc: t('nav.roles.corporateDesc', 'Monthly passes & employee roster'), badge: 'Corporate' },
+    { key: 'passenger', label: t('nav.roles.passenger', 'Passenger Dashboard'), icon: 'person', desc: t('nav.roles.passengerDesc', 'Direct & 1-day tickets'), badge: 'Passenger' },
+    { key: 'college_admin', label: t('nav.roles.college_admin', 'College Admin Desk'), icon: 'account_balance', desc: t('nav.roles.collegeAdminDesc', 'Student reviews & college stamp'), badge: 'College' },
+    { key: 'prtc_admin', label: t('nav.roles.prtc_admin', 'PRTC Admin Portal'), icon: 'local_police', desc: t('nav.roles.prtcAdminDesc', 'College lists & depot sanctions'), badge: 'PRTC HQ' },
   ];
 
   return (
@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-1.5 text-xs font-bold text-[#000666] bg-white border border-[#c6c5d4] px-3 py-1.5 rounded-xl hover:bg-[#f5f3f3] shadow-xs transition"
           >
             <span className="material-symbols-outlined text-sm text-[#000666]">sync_alt</span>
-            <span className="hidden sm:inline">Role View:</span>
+            <span className="hidden sm:inline">{t('nav.roleView', 'Role View')}:</span>
             <span className="font-extrabold text-[#000666]">
               {isAuthenticated && userProfile.roleType
                 ? roleOptions.find((r) => r.key === (userProfile.roleType as PortalRole))?.badge || 'Logged In'
@@ -135,18 +135,18 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Language Switcher */}
-        <div className="flex items-center gap-1 bg-white border border-[#c6c5d4] rounded-xl px-2 py-1 shadow-xs">
-          <span className="material-symbols-outlined text-sm text-[#000666]">translate</span>
+        {/* Language Switcher - Prominent & Comfortable Size */}
+        <div className="flex items-center gap-1.5 bg-white border-2 border-[#000666]/30 hover:border-[#000666] rounded-xl px-3 py-1.5 shadow-xs transition group">
+          <span className="material-symbols-outlined text-base text-[#000666] group-hover:scale-110 transition-transform">translate</span>
           <select
             value={i18n.language}
             onChange={(e) => i18n.changeLanguage(e.target.value)}
-            className="text-xs font-bold text-[#1b1c1c] bg-transparent focus:outline-none cursor-pointer"
+            className="text-xs sm:text-sm font-extrabold text-[#1b1c1c] bg-transparent focus:outline-none cursor-pointer py-0.5 pr-1 tracking-tight"
             aria-label="Select Language"
           >
-            <option value="en">English</option>
-            <option value="pa">ਪੰਜਾਬੀ</option>
-            <option value="hi">हिन्दी</option>
+            <option value="en" className="py-2.5 text-sm font-bold text-gray-900 bg-white">English</option>
+            <option value="pa" className="py-2.5 text-sm font-bold text-gray-900 bg-white">ਪੰਜਾਬੀ (Punjabi)</option>
+            <option value="hi" className="py-2.5 text-sm font-bold text-gray-900 bg-white">हिन्दी (Hindi)</option>
           </select>
         </div>
 

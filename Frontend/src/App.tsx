@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PortalRole, StudentApplication, BusTicket, UserProfile, RouteSchedule, UserRoleType } from './types';
 import {
   mockColleges,
@@ -33,6 +34,7 @@ const roleMapping: Record<string, PortalRole> = {
 };
 
 export default function App() {
+  const { t } = useTranslation();
   const [currentRole, setCurrentRole] = useState<PortalRole>('gateway');
   const [colleges, setColleges] = useState(mockColleges);
   const [schedules, setSchedules] = useState(mockSchedules);
@@ -215,16 +217,16 @@ export default function App() {
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-[#000666] flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">dashboard</span>
-              Select Role Portal:
+              {t('quickSwitch.selectRolePortal', 'Select Role Portal:')}
             </span>
             <div className="flex flex-wrap gap-1.5">
               {[
-                { id: 'gateway', label: 'Central Gateway' },
-                { id: 'student', label: '1. Student Dashboard' },
-                { id: 'corporate', label: '2. For Corporates' },
-                { id: 'passenger', label: '3. Normal Passenger' },
-                { id: 'college_admin', label: '4. College Admin' },
-                { id: 'prtc_admin', label: '5. PRTC Admin' },
+                { id: 'gateway', label: t('quickSwitch.gateway', 'Central Gateway') },
+                { id: 'student', label: t('quickSwitch.student', '1. Student Dashboard') },
+                { id: 'corporate', label: t('quickSwitch.corporate', '2. For Corporates') },
+                { id: 'passenger', label: t('quickSwitch.passenger', '3. Normal Passenger') },
+                { id: 'college_admin', label: t('quickSwitch.college_admin', '4. College Admin') },
+                { id: 'prtc_admin', label: t('quickSwitch.prtc_admin', '5. PRTC Admin') },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -258,7 +260,7 @@ export default function App() {
               className="bg-white border border-[#c6c5d4] hover:bg-[#000666] hover:text-white px-2.5 py-1 rounded-lg text-[11px] text-[#000666] font-bold transition flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-xs">key</span>
-              Login Dialog
+              {t('quickSwitch.loginDemo', 'Login Demo Switch')}
             </button>
           </div>
         </div>
