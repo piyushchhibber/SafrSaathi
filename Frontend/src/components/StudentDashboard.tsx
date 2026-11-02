@@ -45,9 +45,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 }) => {
   const { t } = useTranslation();
   // Applications created before the current API used a pass ID as `studentId`,
-  // while new applications use the immutable user ID.  Accept either form so
+  // while new applications use the immutable user ID. Accept either form so
   // an approved pass remains visible after a fresh login/session restore.
-  const myApp: StudentApplication | undefined = (applications || []).find((app) => {
+  const studentApps = (applications || []).filter((app) => {
     if (!app) return false;
     const matchesId =
       app.studentId === userProfile?.id ||
@@ -62,6 +62,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       app.rollNumber === userProfile.rollNo;
     return Boolean(matchesId || matchesName || matchesRoll);
   });
+
+  const [activeAppId, setActiveAppId] = useState<string | null>(null);
+
+  // Always prioritize an active sanctioned/approved pass so students can board buses and show their QR,
+  // followed by an attested application under review, then latest pending application.
+  const defaultApp: StudentApplication | undefined =
+    studentApps.find((app) => app.status === 'approved') ||
+    studentApps.find((app) => app.status === 'college_approved') ||
+    studentApps[0];
+
+  const myApp: StudentApplication | undefined =
+    (activeAppId && studentApps.find((a) => a.id === activeAppId)) || defaultApp;
 
   const [selectedDocPreview, setSelectedDocPreview] = useState<{
     title: string;
@@ -371,12 +383,31 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
         {/* Right Col: APPLICATION STATUS & TWO-STAGE PIPELINE */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h3 className="font-extrabold text-sm text-[#1b1c1c] uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-[#000666] text-lg">track_changes</span>
               {t('student.statusTrackerTitle', 'Concession Application Status Tracker')}
             </h3>
-            <span className="text-xs text-[#767683]">{t('student.refId', 'Ref ID')}: {myApp?.id ? `#${myApp.id}` : '—'}</span>
+            <div className="flex items-center gap-2">
+              {studentApps.length > 1 && (
+                <div className="flex items-center gap-1 bg-[#eae8e7] p-1 rounded-xl">
+                  {studentApps.map((app) => (
+                    <button
+                      key={app.id}
+                      onClick={() => setActiveAppId(app.id)}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition ${
+                        myApp?.id === app.id
+                          ? 'bg-white text-[#000666] shadow-xs'
+                          : 'text-[#454652] hover:text-[#1b1c1c]'
+                      }`}
+                    >
+                      {app.status === 'approved' ? '✓ Sanctioned' : 'Pending'} (#{app.id.slice(-6)})
+                    </button>
+                  ))}
+                </div>
+              )}
+              <span className="text-xs text-[#767683]">{t('student.refId', 'Ref ID')}: {myApp?.id ? `#${myApp.id}` : '—'}</span>
+            </div>
           </div>
 
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#c6c5d4] shadow-xs space-y-6">
