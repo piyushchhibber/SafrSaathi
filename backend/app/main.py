@@ -855,28 +855,78 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
 def verify_student_pass(
     body: QrVerificationPayload,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles("prtc_admin", "conductor")),
+    actor: User = Depends(current_user),
 ):
+    if actor.role_type not in {"prtc_admin", "conductor"}:
+        raise HTTPException(403, "Only PRTC conductors and transit officers can verify passes")
+
     raw_token = body.token.strip()
     if raw_token.startswith(QR_PREFIX):
-        raw_token = raw_token[len(QR_PREFIX):]
+        raw_token = raw_token[len(QR_PREFIX):].strip()
+
+    application = None
+    # 1. Try decoding as signed JWT QR token
     try:
         claims = decode_token(raw_token)
-    except ValueError as exc:
-        raise HTTPException(400, "The QR code is invalid or expired") from exc
-    if claims.get("kind") != "student_pass":
-        raise HTTPException(400, "This QR code is not a student pass")
-    application = db.get(StudentApplication, claims.get("sub"))
+        if claims.get("kind") == "student_pass":
+            application = db.get(StudentApplication, claims.get("sub"))
+    except Exception:
+        pass
+
+    # 2. Try direct lookup by application id, student_id, roll number, or pass_id
+    if not application:
+        clean = raw_token.strip()
+        application = db.scalar(
+            select(StudentApplication).where(
+                (StudentApplication.id == clean)
+                | (StudentApplication.student_id == clean)
+                | (StudentApplication.roll_number == clean)
+                | (StudentApplication.name.ilike(clean))
+            ).order_by(StudentApplication.created_at.desc())
+        )
+        if not application:
+            user = db.scalar(
+                select(User).where(
+                    (User.pass_id.ilike(clean))
+                    | (User.email.ilike(clean))
+                    | (User.roll_no.ilike(clean))
+                )
+            )
+            if user:
+                application = db.scalar(
+                    select(StudentApplication).where(
+                        (StudentApplication.student_id == user.id)
+                        | (StudentApplication.student_id == user.pass_id)
+                        | (StudentApplication.name.ilike(user.name))
+                    ).order_by(StudentApplication.created_at.desc())
+                )
+
     if not application or application.status != "approved":
-        raise HTTPException(404, "No active approved pass was found")
+        raise HTTPException(404, "No active approved pass was found for this code or ID")
+
     holder = db.get(User, application.student_id)
     route_valid = True
     route_message = "Pass route matches the active trip"
-    if body.tripRoute:
-        pass_stops = {x.strip().lower() for x in re.split(r"->|→", application.route) if x.strip()}
-        trip_stops = {x.strip().lower() for x in re.split(r"->|→", body.tripRoute) if x.strip()}
-        route_valid = bool(pass_stops & trip_stops)
+    if body.tripRoute and body.tripRoute.lower() not in {"all", "all routes", "universal inspection", "all routes (universal inspection)"}:
+        pass_stops = [x.strip().lower() for x in re.split(r"->|→", application.route) if x.strip()]
+        trip_stops = [x.strip().lower() for x in re.split(r"->|→", body.tripRoute) if x.strip()]
+        matched = False
+        for ts in trip_stops:
+            for ps in pass_stops:
+                if ts in ps or ps in ts:
+                    matched = True
+                    break
+                # Match core significant keyword (e.g. 'landran', 'kharar', 'patiala', 'thapar', 'pec')
+                ts_words = {w for w in re.findall(r"\w+", ts) if len(w) > 3 and w not in {"stand", "campus", "road", "stop"}}
+                ps_words = {w for w in re.findall(r"\w+", ps) if len(w) > 3 and w not in {"stand", "campus", "road", "stop"}}
+                if ts_words & ps_words:
+                    matched = True
+                    break
+            if matched:
+                break
+        route_valid = matched
         route_message = "Pass route matches the active trip" if route_valid else "This pass is not authorised for the current bus route"
+
     return {
         "valid": True,
         "holderName": application.name,

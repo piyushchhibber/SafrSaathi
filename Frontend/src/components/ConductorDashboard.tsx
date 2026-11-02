@@ -6,10 +6,12 @@ import { api, PassVerification } from '../utils/api';
 type ScanResult = { data: PassVerification; boardedAt: string } | { error: string } | null;
 
 const routeOptions = [
+  'Kharar Bus Stand -> Landran',
   'Zirakpur Bus Stand -> Landran',
   'Patiala Bus Stand -> Nabha Road -> Thapar Campus',
   'Chandigarh ISBT 43 -> Patiala Bus Stand',
   'Mohali Phase 7 -> Sector 43 ISBT -> PEC Sector 12',
+  'All Routes (Universal Inspection)',
 ];
 
 export const ConductorDashboard: React.FC<{ userProfile: UserProfile }> = ({ userProfile }) => {
@@ -24,7 +26,12 @@ export const ConductorDashboard: React.FC<{ userProfile: UserProfile }> = ({ use
 
   const stopCamera = async () => {
     if (scannerRef.current) {
-      try { await scannerRef.current.stop(); scannerRef.current.clear(); } catch { /* already stopped */ }
+      try {
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
+        scannerRef.current.clear();
+      } catch { /* already stopped */ }
       scannerRef.current = null;
     }
     setScanning(false);
@@ -37,21 +44,37 @@ export const ConductorDashboard: React.FC<{ userProfile: UserProfile }> = ({ use
       const data = await api.verifyPass(raw, tripRoute);
       setResult({ data, boardedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
     } catch (error: any) {
-      setResult({ error: error?.message || 'The pass could not be verified.' });
+      setResult({ error: error?.message || 'The pass could not be verified. Ensure pass ID is correct or student pass is approved.' });
     } finally { setLoading(false); }
   };
 
   const startCamera = () => {
     setResult(null); setScanning(true);
-    window.setTimeout(async () => {
+    setTimeout(async () => {
+      const el = document.getElementById('conductor-qr-reader');
+      if (!el) {
+        setScanning(false);
+        setResult({ error: 'Scanner container element not found. Please try again.' });
+        return;
+      }
       try {
         const scanner = new Html5Qrcode('conductor-qr-reader');
         scannerRef.current = scanner;
-        await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 230 }, (text) => {
+        const config = { fps: 10, qrbox: { width: 240, height: 240 } };
+        const onScan = (text: string) => {
           stopCamera().then(() => { setPayload(text); verify(text); });
-        }, () => {});
-      } catch (error: any) { setScanning(false); setResult({ error: `Camera could not start: ${error?.message || error}` }); }
-    }, 50);
+        };
+        try {
+          await scanner.start({ facingMode: 'environment' }, config, onScan, () => {});
+        } catch {
+          // If back camera is not available (e.g. desktop webcam / front cam), fallback to user cam
+          await scanner.start({ facingMode: 'user' }, config, onScan, () => {});
+        }
+      } catch (error: any) {
+        setScanning(false);
+        setResult({ error: `Camera could not start: ${error?.message || error}. You can still paste or type the pass ID below.` });
+      }
+    }, 100);
   };
 
   useEffect(() => () => { void stopCamera(); }, []);
@@ -84,8 +107,35 @@ export const ConductorDashboard: React.FC<{ userProfile: UserProfile }> = ({ use
       </aside>
 
       <section className="bg-white rounded-3xl border border-[#c6c5d4] shadow-xs p-5 sm:p-6">
-        <div className="flex justify-between gap-3 items-start border-b border-[#eae8e7] pb-4"><div><h2 className="font-black text-lg flex items-center gap-2"><span className="material-symbols-outlined text-[#000666]">qr_code_2</span>Verify passenger pass</h2><p className="text-xs text-[#767683] mt-1">Scan the PRTC-issued QR or paste its signed payload.</p></div><span className="text-[10px] font-bold text-[#767683]">INSTANT ROUTE VALIDATION</span></div>
-        <div className="mt-5 flex flex-col sm:flex-row gap-2"><button onClick={scanning ? stopCamera : startCamera} className="px-4 py-3 rounded-xl border-2 border-[#000666] text-[#000666] font-black text-xs flex justify-center items-center gap-2"><span className="material-symbols-outlined text-base">photo_camera</span>{scanning ? 'Stop camera' : 'Open live QR camera'}</button><input value={payload} onChange={(e) => setPayload(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && verify()} placeholder="Pass / QR payload" className="flex-1 rounded-xl border border-[#c6c5d4] px-3 text-xs font-mono focus:outline-none focus:border-[#000666] min-h-11"/><button onClick={() => verify()} disabled={loading || !payload.trim()} className="px-5 py-3 rounded-xl bg-[#000666] text-white font-black text-xs disabled:opacity-40">{loading ? 'Checking…' : 'Verify'}</button></div>
+        <div className="flex justify-between gap-3 items-start border-b border-[#eae8e7] pb-4"><div><h2 className="font-black text-lg flex items-center gap-2"><span className="material-symbols-outlined text-[#000666]">qr_code_2</span>Verify passenger pass</h2><p className="text-xs text-[#767683] mt-1">Scan the PRTC-issued QR, or enter student Pass ID / Roll Number.</p></div><span className="text-[10px] font-bold text-[#767683]">INSTANT ROUTE VALIDATION</span></div>
+        <div className="mt-5 flex flex-col sm:flex-row gap-2"><button onClick={scanning ? stopCamera : startCamera} className="px-4 py-3 rounded-xl border-2 border-[#000666] text-[#000666] font-black text-xs flex justify-center items-center gap-2"><span className="material-symbols-outlined text-base">photo_camera</span>{scanning ? 'Stop camera' : 'Open live QR camera'}</button><input value={payload} onChange={(e) => setPayload(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && verify()} placeholder="Pass ID (e.g. PRTC-STU-887) or QR payload" className="flex-1 rounded-xl border border-[#c6c5d4] px-3 text-xs font-mono focus:outline-none focus:border-[#000666] min-h-11"/><button onClick={() => verify()} disabled={loading || !payload.trim()} className="px-5 py-3 rounded-xl bg-[#000666] text-white font-black text-xs disabled:opacity-40">{loading ? 'Checking…' : 'Verify'}</button></div>
+        
+        {/* Quick Test Demo Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+          <span className="text-[#767683] font-bold text-[11px]">Quick Verify:</span>
+          <button
+            type="button"
+            onClick={() => { setPayload('PRTC-STU-887'); setTripRoute('Kharar Bus Stand -> Landran'); verify('PRTC-STU-887'); }}
+            className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#000666] border border-blue-200 font-bold hover:bg-blue-100 transition text-[11px]"
+          >
+            Prakash (CGC Landran · #887)
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPayload('usr-student-01'); setTripRoute('Patiala Bus Stand -> Nabha Road -> Thapar Campus'); verify('usr-student-01'); }}
+            className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold hover:bg-emerald-100 transition text-[11px]"
+          >
+            Navjot (Thapar · #101)
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPayload('STU-2024-5519'); setTripRoute('Mohali Phase 7 -> Sector 43 ISBT -> PEC Sector 12'); verify('STU-2024-5519'); }}
+            className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200 font-bold hover:bg-purple-100 transition text-[11px]"
+          >
+            Gurleen (PEC · #102)
+          </button>
+        </div>
+
         {scanning && <div id="conductor-qr-reader" className="mt-4 max-w-sm rounded-2xl overflow-hidden border border-[#c6c5d4]" />}
         {verified && <div className={`mt-5 border-2 rounded-3xl p-5 ${canBoard ? 'border-emerald-500 bg-emerald-50' : 'border-red-400 bg-red-50'}`}>
           <div className="flex justify-between items-center gap-3 border-b border-emerald-200/70 pb-3"><div className="flex items-center gap-2 font-black text-sm"><span className={`material-symbols-outlined ${canBoard ? 'text-emerald-700' : 'text-red-700'}`}>{canBoard ? 'verified' : 'gpp_bad'}</span>{canBoard ? 'VERIFIED VALID PASS' : 'PASS VALID — ROUTE NOT AUTHORIZED'}</div><span className={`text-[10px] font-black rounded-full px-3 py-1 ${canBoard ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>{canBoard ? 'ACTIVE' : 'DO NOT BOARD'}</span></div>
