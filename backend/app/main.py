@@ -628,7 +628,6 @@ def update_app(app_id: str, body: GenericPayload, db: Session = Depends(get_db),
                 (StudentApplication.id == app_id)
                 | (StudentApplication.student_id == app_id)
                 | (StudentApplication.roll_number == app_id)
-                | (StudentApplication.pass_id == app_id)
             ).order_by(StudentApplication.created_at.desc())
         )
     if not obj:
@@ -870,7 +869,6 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
                 (StudentApplication.id == clean)
                 | (StudentApplication.student_id == clean)
                 | (StudentApplication.roll_number == clean)
-                | (StudentApplication.pass_id == clean)
                 | (StudentApplication.name.ilike(clean))
             ).order_by(StudentApplication.created_at.desc())
         )
@@ -932,7 +930,7 @@ def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Dep
         college_name=application.college_name or "",
         course=application.course or "",
         semester=application.semester or "",
-        pass_id=application.pass_id or f"PRTC-STU-{application.roll_number}",
+        pass_id=getattr(application, "pass_id", None) or f"PRTC-STU-{application.roll_number}",
         avatar_url=holder.avatar_url if holder else "",
     )
     return {
@@ -1024,7 +1022,7 @@ def verify_student_pass(
         "valid": True,
         "holderName": application.name,
         "rollNumber": application.roll_number,
-        "passId": application.pass_id or application.id,
+        "passId": getattr(application, "pass_id", None) or application.id,
         "route": application.route,
         "passType": application.pass_type,
         "avatarUrl": holder.avatar_url if holder else "",
