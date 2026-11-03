@@ -77,6 +77,7 @@ export interface BusTicket {
   validUntil?: string;
   companyName?: string;
   holderName?: string;
+  paidViaWallet?: boolean;
 }
 
 export interface UserProfile {
@@ -124,4 +125,25 @@ export interface RouteSchedule {
   fare: number;
   availableSeats: number;
   frequency: string;
+}
+
+export interface WalletInfo {
+  id: string;
+  balance: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface WalletTransaction {
+  id: string;
+  walletId: string;
+  userId: string;
+  type: 'credit' | 'debit';
+  amount: number;
+  balanceAfter: number;
+  description: string;
+  referenceId?: string;
+  paymentMethod?: string;
+  status: string;
+  createdAt: string;
 }

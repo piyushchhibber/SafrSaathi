@@ -72,3 +72,9 @@ def ensure_columns():
                 conn.execute(text("ALTER TABLE users ADD COLUMN dob VARCHAR"))
             if "gender" not in u_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR"))
+
+    if "tickets" in inspector.get_table_names():
+        t_cols = {c["name"] for c in inspector.get_columns("tickets")}
+        with engine.begin() as conn:
+            if "paid_via_wallet" not in t_cols:
+                conn.execute(text("ALTER TABLE tickets ADD COLUMN paid_via_wallet BOOLEAN DEFAULT 0"))
