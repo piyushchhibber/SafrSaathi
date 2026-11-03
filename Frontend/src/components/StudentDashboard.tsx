@@ -98,7 +98,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     userProfile?.email?.toLowerCase().includes('mani')
   );
 
-  const defaultApprovedApp: StudentApplication = {
+  const isPrakashProfile = Boolean(
+    userProfile?.name?.toLowerCase().includes('prakash') ||
+    userProfile?.email?.toLowerCase().includes('prakash')
+  );
+
+  const isDemoProfile = isManiProfile || isPrakashProfile;
+
+  // Demo approved pass is ONLY provided for built-in demo profiles (Mani Ladla / Prakash),
+  // NEVER for new or other student accounts who have not yet submitted an application.
+  const defaultApprovedApp: StudentApplication | undefined = isDemoProfile ? {
     id: isManiProfile ? 'app-mani-ladla' : 'app-prakash',
     studentId: userProfile?.id || (isManiProfile ? 'usr-mani-ladla' : 'usr-5337b7bde4b9'),
     passId: isManiProfile ? 'PRTC-STU-2012' : (userProfile?.passId || 'PRTC-STU-887'),
@@ -113,15 +122,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     passExpiresAt: '2027-04-30',
     duration: 'Monthly',
     isPunjabResident: true,
-  };
+  } : undefined;
 
-  const defaultApp: StudentApplication =
+  const defaultApp: StudentApplication | undefined =
     studentApps.find((app) => app.status === 'approved') ||
     studentApps.find((app) => app.status === 'college_approved') ||
     studentApps[0] ||
     defaultApprovedApp;
 
-  const myApp: StudentApplication =
+  const myApp: StudentApplication | undefined =
     (activeAppId && studentApps.find((a) => a.id === activeAppId)) || defaultApp;
 
   const [selectedDocPreview, setSelectedDocPreview] = useState<{
@@ -133,12 +142,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [qrExpiresAt, setQrExpiresAt] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
 
-  const isApproved = myApp?.status === 'approved';
+  const isApproved = Boolean(myApp && myApp.status === 'approved');
 
-  const studentName = userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash');
+  const studentName = userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : isPrakashProfile ? 'Prakash' : 'Student Commuter');
   const collegeLabel =
-    userProfile?.college || userProfile?.institution || myApp?.collegeName || 'Chandigarh Engineering College-CGC Landran';
-  const rollLabel = isManiProfile ? '869' : (userProfile?.rollNo || myApp?.rollNumber || '887');
+    userProfile?.college || userProfile?.institution || myApp?.collegeName || (isDemoProfile ? 'Chandigarh Engineering College-CGC Landran' : 'Punjab Technical Institution');
+  const rollLabel = userProfile?.rollNo || myApp?.rollNumber || (isManiProfile ? '869' : isPrakashProfile ? '887' : '—');
   const passIdLabel = isApproved
     ? (isManiProfile
         ? 'PRTC-STU-2012'
@@ -147,9 +156,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
            myApp?.id ||
            'PRTC-STU-887'))
     : 'Not issued';
-  const validityLabel = isManiProfile
-    ? '1 Month (Monthly Concession Valid)'
-    : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)');
+  const validityLabel = isApproved
+    ? (isManiProfile
+        ? '1 Month (Monthly Concession Valid)'
+        : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)'))
+    : 'Not issued';
 
 
 
@@ -250,7 +261,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     name: studentName,
     holderName: studentName,
     title: `${myApp?.passType || 'Student'} Concession Pass`,
-    route: isManiProfile ? 'Zirakpur Bus Stand -> Landran' : (myApp?.route || 'Kharar Bus Stand -> CGC Landran Mohali Campus'),
+    route: isManiProfile ? 'Zirakpur Bus Stand -> Landran' : (myApp?.route || (isDemoProfile ? 'Kharar Bus Stand -> CGC Landran Mohali Campus' : 'No route sanctioned yet')),
     college: collegeLabel,
     validUntil: validityLabel,
     rollNo: rollLabel,
@@ -258,7 +269,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     aadhaarNo: maskAadhaar(userProfile?.aadhaarNumber || myApp?.aadhaarNumber),
     applicationId: isManiProfile ? 'app-179337695169' : myApp?.id,
     qrCodeDataUrl: qrCodeDataUrl,
-    expiresAt: qrExpiresAt || myApp?.passExpiresAt || '2027-04-30',
+    expiresAt: qrExpiresAt || myApp?.passExpiresAt || (isApproved ? '2027-04-30' : ''),
     duration: isManiProfile ? 'Monthly' : myApp?.duration,
   };
 
