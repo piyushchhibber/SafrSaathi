@@ -1,4 +1,4 @@
-import { BusTicket, College, RouteSchedule, StudentApplication, UserProfile, UserRoleType } from '../types';
+import { BusTicket, College, RouteSchedule, StudentApplication, UserProfile, UserRoleType, WalletInfo, WalletTransaction } from '../types';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/$/, '');
 const TOKEN_KEY = 'prtc_access_token';
@@ -345,5 +345,19 @@ export const api = {
     request<BusTicket>('/tickets', {
       method: 'POST',
       body: JSON.stringify({ data: { ...ticket, ownerPassId } }),
+    }),
+
+  // Wallet
+  getWallet: () => request<WalletInfo>('/wallet'),
+  getWalletTransactions: () => request<WalletTransaction[]>('/wallet/transactions'),
+  addMoneyToWallet: (amount: number, paymentMethod: string = 'upi') =>
+    request<{ balance: number; transaction: WalletTransaction }>('/wallet/add-money', {
+      method: 'POST',
+      body: JSON.stringify({ amount, paymentMethod }),
+    }),
+  payFromWallet: (amount: number, description: string = '', referenceId?: string) =>
+    request<{ balance: number; transaction: WalletTransaction }>('/wallet/pay', {
+      method: 'POST',
+      body: JSON.stringify({ amount, description, referenceId }),
     }),
 };

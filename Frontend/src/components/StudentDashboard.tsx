@@ -10,6 +10,7 @@ interface StudentDashboardProps {
   onOpenPassModal: (passData: any) => void;
   onOpenApplicationModal: () => void;
   onOpenEditProfile: () => void;
+  onOpenWallet?: () => void;
 }
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/$/, '');
@@ -66,6 +67,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onOpenPassModal,
   onOpenApplicationModal,
   onOpenEditProfile,
+  onOpenWallet,
 }) => {
   const { t } = useTranslation();
   // Applications created before the current API used a pass ID as `studentId`,
@@ -306,6 +308,15 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <span className="material-symbols-outlined text-sm">edit_square</span>
             {t('student.editProfile', 'Edit Profile')}
           </button>
+          {onOpenWallet && (
+            <button
+              onClick={onOpenWallet}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-extrabold transition shadow-md flex items-center justify-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-sm">account_balance_wallet</span>
+              Transit Wallet
+            </button>
+          )}
           <button
             onClick={onOpenApplicationModal}
             className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#000666] hover:bg-[#1a237e] text-white text-xs font-extrabold transition shadow-md flex items-center justify-center gap-2"

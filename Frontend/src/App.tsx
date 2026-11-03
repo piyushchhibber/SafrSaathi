@@ -24,6 +24,7 @@ import { StudentPassApplicationModal } from './components/StudentPassApplication
 import { EditProfileModal } from './components/EditProfileModal';
 import { PassQrModal } from './components/PassQrModal';
 import { SchedulesModal } from './components/SchedulesModal';
+import { WalletDashboard } from './components/WalletDashboard';
 import confetti from 'canvas-confetti';
 
 const roleMapping: Record<string, PortalRole> = {
@@ -52,6 +53,7 @@ export default function App() {
   const [authRoleTarget, setAuthRoleTarget] = useState<UserRoleType>('student');
   const [isStudentAppModalOpen, setIsStudentAppModalOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
 
   // Refresh server-authoritative applications and tickets
   const loadUserData = () => {
@@ -210,6 +212,7 @@ export default function App() {
         isAuthenticated={isAuthenticated}
         onOpenAuth={handleOpenAuth}
         onOpenSchedules={() => setIsSchedulesOpen(true)}
+        onOpenWallet={() => setIsWalletOpen(true)}
         onLogout={handleLogout}
       />
 
@@ -299,6 +302,7 @@ export default function App() {
               onOpenPassModal={(passData) => setActivePassData(passData)}
               onOpenApplicationModal={() => setIsStudentAppModalOpen(true)}
               onOpenEditProfile={() => setIsEditProfileOpen(true)}
+              onOpenWallet={() => setIsWalletOpen(true)}
             />
           )
         )}
@@ -318,6 +322,7 @@ export default function App() {
               userProfile={userProfile}
               onOpenPassModal={(passData) => setActivePassData(passData)}
               onOpenEditProfile={() => setIsEditProfileOpen(true)}
+              onOpenWallet={() => setIsWalletOpen(true)}
             />
           )
         )}
@@ -350,6 +355,7 @@ export default function App() {
                 })
               }
               onBuyDirectTicket={handleDirectTicketBooking}
+              onOpenWallet={() => setIsWalletOpen(true)}
             />
           )
         )}
@@ -371,6 +377,7 @@ export default function App() {
               applications={applications}
               onUpdateApplication={handleUpdateApplication}
               onOpenEditProfile={() => setIsEditProfileOpen(true)}
+              onOpenWallet={() => setIsWalletOpen(true)}
             />
           )
         )}
@@ -457,6 +464,17 @@ export default function App() {
           schedules={schedules}
           onClose={() => setIsSchedulesOpen(false)}
           onBookRoute={handleBookFromSchedule}
+        />
+      )}
+
+      {/* Wallet Dashboard Modal */}
+      {isWalletOpen && (
+        <WalletDashboard
+          userProfile={userProfile}
+          onClose={() => {
+            setIsWalletOpen(false);
+            loadUserData();
+          }}
         />
       )}
     </div>

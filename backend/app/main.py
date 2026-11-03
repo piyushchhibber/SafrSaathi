@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_
 from .database import Base, engine, get_db, ensure_columns
-from .models import (User, College, StudentApplication, Ticket, TicketVerification, RouteSchedule)
+from .models import (User, College, StudentApplication, Ticket, TicketVerification, RouteSchedule, Wallet, WalletTransaction)
 from .security import hash_password, verify_password, create_token, decode_token, create_qr_token, create_signup_token
 
 if sys.version_info < (3, 10):
@@ -1010,3 +1010,124 @@ def upload_document(file: UploadFile = File(...), actor: User = Depends(current_
                 raise HTTPException(413, "File is too large (maximum 5 MB)")
             out.write(chunk)
     return {"fileName": name, "originalName": file.filename}
+
+
+# ---------------------------------------------------------------------------
+# Wallet
+# ---------------------------------------------------------------------------
+def get_or_create_wallet(user: User, db: Session) -> Wallet:
+    """Return the user's wallet, creating one if it doesn't exist."""
+    wallet = db.scalar(select(Wallet).where(Wallet.user_id == user.id))
+    if not wallet:
+        wallet = Wallet(
+            id=f"wal-{uuid.uuid4().hex[:12]}",
+            user_id=user.id,
+            balance=0.0,
+            is_active=True,
+        )
+        db.add(wallet)
+        db.commit()
+        db.refresh(wallet)
+    return wallet
+
+
+@app.get("/api/wallet")
+def wallet_info(db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    wallet = get_or_create_wallet(actor, db)
+    return {
+        "id": wallet.id,
+        "balance": wallet.balance,
+        "isActive": wallet.is_active,
+        "createdAt": wallet.created_at.isoformat() if wallet.created_at else None,
+    }
+
+
+@app.get("/api/wallet/transactions")
+def wallet_transactions(db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    wallet = get_or_create_wallet(actor, db)
+    txns = db.scalars(
+        select(WalletTransaction)
+        .where(WalletTransaction.wallet_id == wallet.id)
+        .order_by(WalletTransaction.created_at.desc())
+    ).all()
+    return [serialize(t) for t in txns]
+
+
+class AddMoneyPayload(BaseModel):
+    amount: float
+    paymentMethod: str = "upi"
+
+
+@app.post("/api/wallet/add-money")
+def wallet_add_money(body: AddMoneyPayload, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    if body.amount <= 0:
+        raise HTTPException(400, "Amount must be positive")
+    if body.amount > 50000:
+        raise HTTPException(400, "Maximum top-up is ₹50,000 per transaction")
+
+    wallet = get_or_create_wallet(actor, db)
+    wallet.balance += body.amount
+    wallet.updated_at = datetime.utcnow()
+
+    txn = WalletTransaction(
+        id=f"wtxn-{uuid.uuid4().hex[:12]}",
+        wallet_id=wallet.id,
+        user_id=actor.id,
+        type="credit",
+        amount=body.amount,
+        balance_after=wallet.balance,
+        description=f"Added via {body.paymentMethod.upper()}",
+        payment_method=body.paymentMethod,
+        status="completed",
+    )
+    db.add(txn)
+    db.commit()
+    db.refresh(wallet)
+    db.refresh(txn)
+    return {
+        "balance": wallet.balance,
+        "transaction": serialize(txn),
+    }
+
+
+class WalletPayPayload(BaseModel):
+    amount: float
+    description: str = ""
+    referenceId: str | None = None
+
+
+@app.post("/api/wallet/pay")
+def wallet_pay(body: WalletPayPayload, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    if body.amount <= 0:
+        raise HTTPException(400, "Amount must be positive")
+
+    wallet = get_or_create_wallet(actor, db)
+    if wallet.balance < body.amount:
+        raise HTTPException(
+            400,
+            f"Insufficient wallet balance. Available: ₹{wallet.balance:.2f}, Required: ₹{body.amount:.2f}",
+        )
+
+    wallet.balance -= body.amount
+    wallet.updated_at = datetime.utcnow()
+
+    txn = WalletTransaction(
+        id=f"wtxn-{uuid.uuid4().hex[:12]}",
+        wallet_id=wallet.id,
+        user_id=actor.id,
+        type="debit",
+        amount=body.amount,
+        balance_after=wallet.balance,
+        description=body.description or f"Payment of ₹{body.amount:.0f}",
+        reference_id=body.referenceId,
+        payment_method="wallet",
+        status="completed",
+    )
+    db.add(txn)
+    db.commit()
+    db.refresh(wallet)
+    db.refresh(txn)
+    return {
+        "balance": wallet.balance,
+        "transaction": serialize(txn),
+    }

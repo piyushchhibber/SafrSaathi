@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { api } from '../utils/api';
+import { WalletInfo } from '../types';
 
 export type PaymentCategory = 'corporate' | 'passenger' | 'one_day_pass' | 'student';
 
@@ -43,6 +45,9 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
   const [cardName, setCardName] = useState('');
   const [selectedBank, setSelectedBank] = useState('SBI');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'success'>('select');
   const [qrTimer, setQrTimer] = useState<number>(300); // 5 mins
 
@@ -57,6 +62,9 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
       setPaymentStep('select');
       setIsProcessing(false);
       setQrTimer(300);
+      // Load wallet balance
+      setWalletLoading(true);
+      api.getWallet().then((w) => setWalletInfo(w)).catch(() => {}).finally(() => setWalletLoading(false));
       setPromoCodeInput('');
       setAppliedPromo(null);
       setPromoError(null);
@@ -110,17 +118,47 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handlePay = (e?: React.FormEvent) => {
+  const handlePay = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    setWalletError(null);
+
+    if (selectedMethod === 'wallet') {
+      const currentBalance = walletInfo?.balance ?? 0;
+      if (currentBalance < finalPayableAmount) {
+        setWalletError(`Insufficient wallet balance (₹${currentBalance.toFixed(2)}). Please add money to wallet or choose another payment method.`);
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setPaymentStep('processing');
+
+    let walletTxnId: string | null = null;
+    if (selectedMethod === 'wallet') {
+      try {
+        const walletRes = await api.payFromWallet(
+          finalPayableAmount,
+          `Transit pass: ${item.title}`,
+          item.holderId
+        );
+        walletTxnId = walletRes.transaction?.id || null;
+        if (walletRes.balance !== undefined) {
+          setWalletInfo((prev) => (prev ? { ...prev, balance: walletRes.balance } : prev));
+        }
+      } catch (err: any) {
+        setIsProcessing(false);
+        setPaymentStep('select');
+        setWalletError(err?.message || 'Wallet payment failed. Please try again.');
+        return;
+      }
+    }
 
     setTimeout(() => {
       setIsProcessing(false);
       setPaymentStep('success');
       confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
 
-      const transactionId = `TXN-PRTC-${Math.floor(10000000 + Math.random() * 90000000)}`;
+      const transactionId = walletTxnId || `TXN-PRTC-${Math.floor(10000000 + Math.random() * 90000000)}`;
       const generatedPass = {
         id: `pass-${Date.now()}`,
         ticketNumber:
@@ -154,6 +192,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
         avatarUrl: item.avatarUrl,
         transactionId,
         paymentMethod: selectedMethod.toUpperCase(),
+        paidViaWallet: selectedMethod === 'wallet',
         promoApplied: appliedPromo || undefined,
         discountGiven: promoDiscountAmount || item.discountAmount,
       };
@@ -554,25 +593,52 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
 
                 {selectedMethod === 'wallet' && (
                   <div className="space-y-3 text-xs">
-                    <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between">
+                    <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                      (walletInfo?.balance ?? 0) >= finalPayableAmount
+                        ? 'bg-indigo-50 border-indigo-200'
+                        : 'bg-amber-50 border-amber-300'
+                    }`}>
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-indigo-900">wallet</span>
+                        <span className={`material-symbols-outlined ${
+                          (walletInfo?.balance ?? 0) >= finalPayableAmount ? 'text-indigo-900' : 'text-amber-800'
+                        }`}>account_balance_wallet</span>
                         <div>
                           <p className="font-bold text-indigo-950">
                             {item.category === 'corporate' ? 'Corporate Fleet Transit Credit' : 'PRTC Commuter FastWallet'}
                           </p>
                           <p className="text-[10px] text-indigo-800">
-                            Available Pre-funded Balance: <span className="font-bold font-mono">₹8,500.00</span>
+                            Available Balance:{' '}
+                            <span className="font-bold font-mono">
+                              {walletLoading ? 'Checking...' : `₹${(walletInfo?.balance ?? 0).toFixed(2)}`}
+                            </span>
                           </p>
                         </div>
                       </div>
-                      <span className="text-[10px] font-black bg-indigo-900 text-white px-2 py-0.5 rounded">
-                        INSTANT
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded ${
+                        (walletInfo?.balance ?? 0) >= finalPayableAmount
+                          ? 'bg-indigo-900 text-white'
+                          : 'bg-amber-200 text-amber-900'
+                      }`}>
+                        {(walletInfo?.balance ?? 0) >= finalPayableAmount ? 'INSTANT' : 'LOW BALANCE'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#454652]">
-                      Direct 1-tap debit from company pre-authorized transit allowance quota.
-                    </p>
+
+                    {(walletInfo?.balance ?? 0) < finalPayableAmount ? (
+                      <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">warning</span>
+                        <span className="text-[11px] font-bold">
+                          Insufficient funds. Need ₹{(finalPayableAmount - (walletInfo?.balance ?? 0)).toFixed(2)} more. Please top up your wallet or choose UPI/Card.
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-[#454652]">
+                        Direct 1-tap debit from your SafrSaathi Transit Wallet. Instant, secure, no OTP required.
+                      </p>
+                    )}
+
+                    {walletError && (
+                      <p className="text-[11px] text-red-600 font-semibold">{walletError}</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -590,10 +656,13 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
               <button
                 type="button"
                 onClick={() => handlePay()}
-                className="flex-2 py-3 rounded-xl bg-[#138808] hover:bg-[#0f6806] text-white text-xs font-extrabold transition shadow-md flex items-center justify-center gap-1.5"
+                disabled={selectedMethod === 'wallet' && (walletInfo?.balance ?? 0) < finalPayableAmount}
+                className="flex-2 py-3 rounded-xl bg-[#138808] hover:bg-[#0f6806] disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-xs font-extrabold transition shadow-md flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-base">payments</span>
-                Pay ₹{finalPayableAmount}.00 & Issue Pass
+                {selectedMethod === 'wallet' && (walletInfo?.balance ?? 0) < finalPayableAmount
+                  ? 'Insufficient Wallet Balance'
+                  : `Pay ₹${finalPayableAmount}.00 & Issue Pass`}
               </button>
             </div>
           </div>

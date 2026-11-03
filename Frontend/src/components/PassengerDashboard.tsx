@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BusTicket, UserProfile, PortalRole } from '../types';
 import confetti from 'canvas-confetti';
 import { PaymentGatewayModal, PaymentItemDetails } from './PaymentGatewayModal';
+import { api } from '../utils/api';
 
 interface PassengerDashboardProps {
   userProfile: UserProfile;
@@ -10,6 +11,7 @@ interface PassengerDashboardProps {
   onNavigateRole: (role: PortalRole) => void;
   onOpenTicketModal: (ticket: BusTicket) => void;
   onBuyDirectTicket: () => void;
+  onOpenWallet?: () => void;
 }
 
 const PASSENGER_POPULAR_ROUTES = [
@@ -27,7 +29,13 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
   onUpdateUserProfile,
   onNavigateRole,
   onOpenTicketModal,
+  onOpenWallet,
 }) => {
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.getWallet().then((w) => setWalletBalance(w.balance)).catch(() => {});
+  }, []);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.name || 'Priya Sharma');
   const [editedEmail, setEditedEmail] = useState(userProfile?.email || 'priya.sharma22@gmail.com');
@@ -129,6 +137,20 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
             <span className="material-symbols-outlined text-lg">directions_bus</span>
             Buy Direct Ticket
           </button>
+          {onOpenWallet && (
+            <button
+              onClick={onOpenWallet}
+              className="flex items-center gap-3 p-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-2xl font-bold text-xs transition shadow-xs text-left"
+            >
+              <span className="material-symbols-outlined text-lg">account_balance_wallet</span>
+              <div className="flex-1">
+                <div>SafrSaathi Wallet</div>
+                <div className="text-[10px] text-amber-100 font-mono">
+                  {walletBalance !== null ? `₹${walletBalance.toFixed(2)}` : '1-Tap Pay'}
+                </div>
+              </div>
+            </button>
+          )}
           <button
             onClick={() => onNavigateRole('one_day_pass')}
             className="flex items-center gap-3 p-2.5 bg-green-700 hover:bg-green-800 text-white rounded-2xl font-bold text-xs transition shadow-xs text-left"
@@ -178,8 +200,8 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
           </p>
         </div>
 
-        {/* 2 Action Cards (Direct Ticket & One Day Ticket with 50 KM Radius) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* 3 Action Cards (Direct Ticket, One Day Pass & Transit Wallet) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Direct Ticket */}
           <div
             onClick={handleOpenDirectBooking}
@@ -240,6 +262,41 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
                 <span className="material-symbols-outlined text-xs text-[#138808]">all_inclusive</span> 24h Radial Zone
               </span>
               <span className="text-xs font-bold text-green-700">₹120 / Day</span>
+            </div>
+          </div>
+
+          {/* SafrSaathi Wallet Card */}
+          <div
+            onClick={onOpenWallet}
+            className="bg-white border-2 border-[#000666] rounded-3xl p-6 relative hover:shadow-lg hover:-translate-y-0.5 transition duration-200 cursor-pointer group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#000666] text-white flex items-center justify-center shadow-xs">
+                  <span className="material-symbols-outlined text-2xl text-amber-300">account_balance_wallet</span>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-[#f5f3f3] group-hover:bg-[#000666] group-hover:text-white flex items-center justify-center transition">
+                  <span className="material-symbols-outlined text-base">arrow_forward</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-black text-[#1b1c1c] group-hover:text-[#000666] transition">
+                  Transit Wallet
+                </h3>
+                <span className="text-[9px] font-extrabold uppercase bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
+                  1-TAP PAY
+                </span>
+              </div>
+              <p className="text-xs text-[#454652] mb-4 leading-relaxed">
+                Add money once, travel anytime. Instant 1-tap checkout for all bus tickets and concession passes.
+              </p>
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-[#eae8e7]">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#f0eded] text-[#454652] px-3 py-1 rounded-full">
+                <span className="material-symbols-outlined text-xs text-amber-600">savings</span>
+                {walletBalance !== null ? `₹${walletBalance.toFixed(2)}` : 'Active'}
+              </span>
+              <span className="text-xs font-bold text-[#000666]">Manage →</span>
             </div>
           </div>
         </div>

@@ -102,6 +102,7 @@ class Ticket(Base):
     valid_until: Mapped[str | None] = mapped_column(String, nullable=True)
     company_name: Mapped[str | None] = mapped_column(String, nullable=True)
     holder_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    paid_via_wallet: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class TicketVerification(Base):
@@ -148,3 +149,28 @@ class RouteSchedule(Base):
     fare: Mapped[float] = mapped_column(Float)
     available_seats: Mapped[int] = mapped_column(Integer)
     frequency: Mapped[str] = mapped_column(String)
+
+
+class Wallet(Base):
+    __tablename__ = "wallets"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), unique=True, index=True)
+    balance: Mapped[float] = mapped_column(Float, default=0.0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class WalletTransaction(Base):
+    __tablename__ = "wallet_transactions"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    wallet_id: Mapped[str] = mapped_column(String, ForeignKey("wallets.id"), index=True)
+    user_id: Mapped[str] = mapped_column(String, index=True)
+    type: Mapped[str] = mapped_column(String)  # "credit" or "debit"
+    amount: Mapped[float] = mapped_column(Float)
+    balance_after: Mapped[float] = mapped_column(Float)
+    description: Mapped[str] = mapped_column(Text, default="")
+    reference_id: Mapped[str | None] = mapped_column(String, nullable=True)  # ticket/pass id
+    payment_method: Mapped[str | None] = mapped_column(String, nullable=True)  # upi, card, etc.
+    status: Mapped[str] = mapped_column(String, default="completed")  # completed, pending, failed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

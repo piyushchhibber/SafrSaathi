@@ -10,6 +10,7 @@ interface HeaderProps {
   isAuthenticated?: boolean;
   onOpenAuth: (roleType?: UserRoleType) => void;
   onOpenSchedules: () => void;
+  onOpenWallet?: () => void;
   onLogout?: () => void;
 }
 
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   isAuthenticated = false,
   onOpenAuth,
   onOpenSchedules,
+  onOpenWallet,
   onLogout,
 }) => {
   const { t, i18n } = useTranslation();
@@ -136,6 +138,18 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
+        {/* Wallet Button */}
+        {isAuthenticated && onOpenWallet && (
+          <button
+            onClick={onOpenWallet}
+            className="flex items-center gap-1.5 text-xs font-extrabold text-[#000666] bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl transition shadow-xs group cursor-pointer"
+            title="SafrSaathi Wallet"
+          >
+            <span className="material-symbols-outlined text-base text-amber-600 group-hover:scale-110 transition-transform">account_balance_wallet</span>
+            <span className="hidden sm:inline">Wallet</span>
+          </button>
+        )}
+
         {/* Language Switcher - Prominent & Comfortable Size */}
         <div className="flex items-center gap-1.5 bg-white border-2 border-[#000666]/30 hover:border-[#000666] rounded-xl px-3 py-1.5 shadow-xs transition group">
           <span className="material-symbols-outlined text-base text-[#000666] group-hover:scale-110 transition-transform">translate</span>
@@ -194,6 +208,18 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
               <div className="pt-2 border-t border-[#eae8e7] space-y-1.5">
+                {onOpenWallet && (
+                  <button
+                    onClick={() => {
+                      onOpenWallet();
+                      setProfileOpen(false);
+                    }}
+                    className="w-full text-center py-2 text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 rounded-xl hover:bg-amber-100 flex items-center justify-center gap-1.5 transition"
+                  >
+                    <span className="material-symbols-outlined text-sm text-amber-700">account_balance_wallet</span>
+                    SafrSaathi Wallet
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     onOpenAuth();
