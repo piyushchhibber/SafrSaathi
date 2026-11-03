@@ -79,6 +79,16 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
   // Ensure complete statewide student roster across all colleges
   const effectiveApps = mergeWithInstitutionalApplications(applications);
 
+  // Active application resolved directly against fresh effectiveApps roster
+  const activeApp = selectedApp
+    ? effectiveApps.find(
+        (a) =>
+          a.id === selectedApp.id ||
+          (a.studentId && selectedApp.studentId && a.studentId === selectedApp.studentId) ||
+          (a.rollNumber && selectedApp.rollNumber && a.rollNumber.trim().toLowerCase() === selectedApp.rollNumber.trim().toLowerCase() && a.name && selectedApp.name && a.name.trim().toLowerCase() === selectedApp.name.trim().toLowerCase())
+      ) || selectedApp
+    : null;
+
   // Applications for this selected college
   const collegeApps = (effectiveApps || []).filter((app) => {
     if (!app) return false;
@@ -336,7 +346,10 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
               </div>
             ) : (
               collegeApps.map((app) => {
-                const isSelected = selectedApp?.id === app.id;
+                const isSelected =
+                  activeApp?.id === app.id ||
+                  (activeApp?.studentId && app.studentId && activeApp.studentId === app.studentId) ||
+                  (activeApp?.rollNumber && app.rollNumber && activeApp.rollNumber === app.rollNumber);
                 const isCollegeApproved = app.status === 'college_approved';
                 const isApproved = app.status === 'approved';
 
@@ -409,44 +422,44 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
             </h3>
           </div>
 
-          {selectedApp ? (
+          {activeApp ? (
             <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#c6c5d4] shadow-md space-y-5">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-[#eae8e7] pb-3">
                 <div>
-                  <h4 className="text-base font-black text-[#1b1c1c]">{selectedApp.name}</h4>
+                  <h4 className="text-base font-black text-[#1b1c1c]">{activeApp.name}</h4>
                   <p className="text-xs text-[#767683]">
-                    {selectedApp.collegeName} • Roll: {selectedApp.rollNumber}
+                    {activeApp.collegeName} • Roll: {activeApp.rollNumber}
                   </p>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-[#767683] block">Sanction Tariff</span>
                   <span className="text-xs font-mono font-bold text-[#000666]">
-                    ₹{selectedApp.subsidizedAmountPaid || 225}.00
+                    ₹{activeApp.subsidizedAmountPaid || 225}.00
                   </span>
                 </div>
               </div>
 
               {/* Verified College Stamp Inspector Box */}
-              {selectedApp.collegeStampId ? (
+              {activeApp.collegeStampId ? (
                 <div className="border-2 border-blue-300 bg-blue-50/50 rounded-2xl p-4 space-y-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <span className="text-[10px] font-black text-[#000666] tracking-wider uppercase block">
                         Stage 1: Verified College Seal
                       </span>
-                      <h5 className="text-xs font-black text-[#1b1c1c]">{selectedApp.collegeName}</h5>
+                      <h5 className="text-xs font-black text-[#1b1c1c]">{activeApp.collegeName}</h5>
                       <p className="text-[11px] text-[#454652]">
-                        Attestation Official: <span className="font-bold">{selectedApp.collegeVerifiedBy}</span>
+                        Attestation Official: <span className="font-bold">{activeApp.collegeVerifiedBy}</span>
                       </p>
-                      <p className="text-[10px] text-[#767683]">Verified Date: {selectedApp.collegeVerifiedDate}</p>
+                      <p className="text-[10px] text-[#767683]">Verified Date: {activeApp.collegeVerifiedDate}</p>
                     </div>
 
                     {/* Circular Stamp Graphic */}
                     <div className="w-16 h-16 rounded-full border-2 border-dashed border-[#000666] flex flex-col items-center justify-center text-center rotate-[-6deg] bg-white text-[#000666] shrink-0 p-1">
                       <span className="text-[6px] font-black uppercase">INSTITUTION</span>
                       <span className="text-[8px] font-black">STAMPED</span>
-                      <span className="text-[6px] font-mono">{selectedApp.collegeStampId}</span>
+                      <span className="text-[6px] font-mono">{activeApp.collegeStampId}</span>
                     </div>
                   </div>
                 </div>
@@ -464,7 +477,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                     Attached Student Proofs (3 Docs)
                   </h5>
                   <button
-                    onClick={() => handleOpenDocViewer('aadhaar', selectedApp)}
+                    onClick={() => handleOpenDocViewer('aadhaar', activeApp)}
                     className="text-[11px] font-bold text-[#000666] hover:underline flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-sm">visibility</span>
@@ -478,13 +491,13 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                     <span className="material-symbols-outlined text-xl text-[#000666] shrink-0">badge</span>
                     <div className="truncate">
                       <p className="text-xs font-bold text-[#1b1c1c] truncate">
-                        {selectedApp.aadhaarFile || 'aadhaar_card_signed.pdf'}
+                        {activeApp.aadhaarFile || 'aadhaar_card_signed.pdf'}
                       </p>
                       <p className="text-[10px] text-green-700 font-bold">✓ Punjab Domicile Verified</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleOpenDocViewer('aadhaar', selectedApp)}
+                    onClick={() => handleOpenDocViewer('aadhaar', activeApp)}
                     className="shrink-0 bg-blue-50 hover:bg-blue-100 text-[#000666] border border-blue-200 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-xs">visibility</span>
@@ -498,13 +511,13 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                     <span className="material-symbols-outlined text-xl text-purple-700 shrink-0">receipt_long</span>
                     <div className="truncate">
                       <p className="text-xs font-bold text-[#1b1c1c] truncate">
-                        {selectedApp.feeReceiptFile || 'college_fee_receipt.pdf'}
+                        {activeApp.feeReceiptFile || 'college_fee_receipt.pdf'}
                       </p>
-                      <p className="text-[10px] text-[#767683]">Ref: {selectedApp.feeReceiptNo || 'TIET-REC-2026-904'}</p>
+                      <p className="text-[10px] text-[#767683]">Ref: {activeApp.feeReceiptNo || 'TIET-REC-2026-904'}</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleOpenDocViewer('fee_receipt', selectedApp)}
+                    onClick={() => handleOpenDocViewer('fee_receipt', activeApp)}
                     className="shrink-0 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-xs">visibility</span>
@@ -520,11 +533,11 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                       <p className="text-xs font-bold text-[#1b1c1c] truncate">
                         student_identity_card.pdf
                       </p>
-                      <p className="text-[10px] text-emerald-700 font-bold">✓ Enrolment Active (Roll: {selectedApp.rollNumber})</p>
+                      <p className="text-[10px] text-emerald-700 font-bold">✓ Enrolment Active (Roll: {activeApp.rollNumber})</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleOpenDocViewer('college_id', selectedApp)}
+                    onClick={() => handleOpenDocViewer('college_id', activeApp)}
                     className="shrink-0 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-xs">visibility</span>
@@ -537,25 +550,25 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
               <div className="bg-[#fbf9f8] p-3.5 rounded-2xl border border-[#c6c5d4] space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-[#767683]">Route:</span>
-                  <span className="font-bold text-[#1b1c1c]">{selectedApp.route}</span>
+                  <span className="font-bold text-[#1b1c1c]">{activeApp.route}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#767683]">Pass Type:</span>
-                  <span className="font-semibold text-[#000666]">{selectedApp.passType}</span>
+                  <span className="font-semibold text-[#000666]">{activeApp.passType}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#767683]">Permanent Address:</span>
                   <span className="font-semibold text-right text-[#1b1c1c] max-w-[60%]">
-                    {selectedApp.aadhaarAddress || 'Punjab State'}
+                    {activeApp.aadhaarAddress || 'Punjab State'}
                   </span>
                 </div>
               </div>
 
               {/* PRTC Actions */}
-              {selectedApp.status === 'college_approved' ? (
+              {activeApp.status === 'college_approved' ? (
                 <div className="space-y-2 pt-2 border-t border-[#eae8e7]">
                   <button
-                    onClick={() => handlePrtcApprove(selectedApp)}
+                    onClick={() => handlePrtcApprove(activeApp)}
                     className="w-full py-3 rounded-2xl bg-[#138808] hover:bg-[#0f6806] text-white font-extrabold text-xs transition shadow-md flex items-center justify-center gap-2"
                   >
                     <span className="material-symbols-outlined text-base">verified</span>
@@ -563,29 +576,29 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
                   </button>
 
                   <button
-                    onClick={() => handlePrtcReject(selectedApp)}
+                    onClick={() => handlePrtcReject(activeApp)}
                     className="w-full py-2 rounded-xl border border-red-600 text-red-600 hover:bg-red-50 font-bold text-xs transition"
                   >
                     Reject Application
                   </button>
                 </div>
-              ) : selectedApp.status === 'approved' ? (
+              ) : activeApp.status === 'approved' ? (
                 <div className="space-y-3 pt-2">
                   <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-900 flex items-center justify-between">
                     <span className="font-bold">✓ PRTC Sanctioned & Disbursed</span>
-                    <span className="font-mono text-[11px]">{selectedApp.prtcAdminId}</span>
+                    <span className="font-mono text-[11px]">{activeApp.prtcAdminId}</span>
                   </div>
                   <button
                     onClick={() =>
                       onOpenPassModal({
-                        ticketNumber: selectedApp.studentId,
-                        holderName: selectedApp.name,
-                        title: `${selectedApp.passType} Concession Pass`,
-                        route: selectedApp.route,
-                        college: selectedApp.collegeName,
+                        ticketNumber: activeApp.studentId,
+                        holderName: activeApp.name,
+                        title: `${activeApp.passType} Concession Pass`,
+                        route: activeApp.route,
+                        college: activeApp.collegeName,
                         validUntil: 'Active for 3 Months (90 Days)',
-                        rollNo: selectedApp.rollNumber,
-                        applicationId: selectedApp.id,
+                        rollNo: activeApp.rollNumber,
+                        applicationId: activeApp.id,
                       })
                     }
                     className="w-full py-2.5 rounded-xl bg-[#000666] text-white text-xs font-bold hover:bg-[#1a237e] transition flex items-center justify-center gap-2"
@@ -615,12 +628,12 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
       </div>
 
       {/* Attached Document Viewer Modal */}
-      {isDocModalOpen && selectedApp && (
+      {isDocModalOpen && activeApp && (
         <DocumentViewerModal
           isOpen={isDocModalOpen}
           onClose={() => setIsDocModalOpen(false)}
           document={viewingDoc}
-          application={selectedApp}
+          application={activeApp}
         />
       )}
     </div>

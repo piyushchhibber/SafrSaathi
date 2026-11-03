@@ -153,17 +153,43 @@ export default function App() {
   // Application Updates (Approved by College or PRTC)
   const handleUpdateApplication = (updatedApp: StudentApplication) => {
     setApplications((prev) => {
-      const updated = prev.map((a) => (a.id === updatedApp.id ? updatedApp : a));
-      saveStoredApplications(updated);
-      return updated;
+      let found = false;
+      const updated = prev.map((a) => {
+        const isMatch =
+          a.id === updatedApp.id ||
+          (a.studentId && updatedApp.studentId && a.studentId === updatedApp.studentId) ||
+          (a.rollNumber && updatedApp.rollNumber && a.rollNumber.trim().toLowerCase() === updatedApp.rollNumber.trim().toLowerCase() && a.name && updatedApp.name && a.name.trim().toLowerCase() === updatedApp.name.trim().toLowerCase());
+        if (isMatch) {
+          found = true;
+          return { ...a, ...updatedApp };
+        }
+        return a;
+      });
+      const finalApps = found ? updated : [updatedApp, ...prev];
+      saveStoredApplications(finalApps);
+      return finalApps;
     });
     api.updateApplication(updatedApp)
       .then((saved) => {
-        setApplications((prev) => {
-          const updated = prev.map((a) => (a.id === saved.id ? saved : a));
-          saveStoredApplications(updated);
-          return updated;
-        });
+        if (saved && saved.id) {
+          setApplications((prev) => {
+            let found = false;
+            const updated = prev.map((a) => {
+              const isMatch =
+                a.id === saved.id ||
+                (a.studentId && saved.studentId && a.studentId === saved.studentId) ||
+                (a.rollNumber && saved.rollNumber && a.rollNumber.trim().toLowerCase() === saved.rollNumber.trim().toLowerCase() && a.name && saved.name && a.name.trim().toLowerCase() === saved.name.trim().toLowerCase());
+              if (isMatch) {
+                found = true;
+                return { ...a, ...saved };
+              }
+              return a;
+            });
+            const finalApps = found ? updated : [saved, ...prev];
+            saveStoredApplications(finalApps);
+            return finalApps;
+          });
+        }
       })
       .catch((err) => console.warn(`Could not sync to backend: ${err.message}`));
   };

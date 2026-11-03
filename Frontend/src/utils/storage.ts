@@ -10,6 +10,47 @@ const SESSION_STORAGE_KEY = 'prtc_active_session_v2';
 export function mergeWithInstitutionalApplications(incomingApps: StudentApplication[] = []): StudentApplication[] {
   const map = new Map<string, StudentApplication>();
 
+  const getStatusRank = (status?: string): number => {
+    if (status === 'approved') return 3;
+    if (status === 'college_approved' || status === 'rejected') return 2;
+    return 1; // pending or unspecified
+  };
+
+  const mergeTwo = (base: StudentApplication, inc: StudentApplication): StudentApplication => {
+    const baseRank = getStatusRank(base.status);
+    const incRank = getStatusRank(inc.status);
+    const effectiveStatus = incRank >= baseRank ? (inc.status || base.status) : base.status;
+
+    return {
+      ...base,
+      ...inc,
+      id: base.id || inc.id,
+      status: effectiveStatus,
+      collegeStampId: inc.collegeStampId || base.collegeStampId,
+      collegeVerifiedBy: inc.collegeVerifiedBy || base.collegeVerifiedBy,
+      collegeVerifiedDate: inc.collegeVerifiedDate || base.collegeVerifiedDate,
+      collegeStampName: inc.collegeStampName || base.collegeStampName,
+      prtcVerifiedBy: inc.prtcVerifiedBy || base.prtcVerifiedBy,
+      prtcVerifiedDate: inc.prtcVerifiedDate || base.prtcVerifiedDate,
+      prtcAdminId: inc.prtcAdminId || base.prtcAdminId,
+      passId: inc.passId || base.passId,
+      studentId: inc.studentId || base.studentId,
+    };
+  };
+
+  const findMatchingKey = (app: StudentApplication): string | null => {
+    if (app.id && map.has(app.id)) return app.id;
+    for (const [k, v] of map.entries()) {
+      const studentIdMatch = app.studentId && v.studentId && app.studentId === v.studentId;
+      const rollMatch = app.rollNumber && v.rollNumber && app.rollNumber.trim().toLowerCase() === v.rollNumber.trim().toLowerCase();
+      const nameMatch = app.name && v.name && app.name.trim().toLowerCase() === v.name.trim().toLowerCase();
+      if (studentIdMatch || (nameMatch && rollMatch)) {
+        return k;
+      }
+    }
+    return null;
+  };
+
   // 1. Always seed with official institutional student applications
   for (const app of mockStudentApplications) {
     if (app && app.id) {
@@ -24,23 +65,13 @@ export function mergeWithInstitutionalApplications(incomingApps: StudentApplicat
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         for (const app of parsed) {
-          if (app && app.id) {
-            // Check if matches an existing institutional app by name/roll to avoid duplicated student records
-            let matchedKey = map.has(app.id) ? app.id : null;
-            if (!matchedKey) {
-              for (const [k, v] of map.entries()) {
-                const nameMatch = v.name && app.name && v.name.trim().toLowerCase() === app.name.trim().toLowerCase();
-                const rollMatch = v.rollNumber && app.rollNumber && v.rollNumber === app.rollNumber;
-                if (nameMatch || rollMatch) {
-                  matchedKey = k;
-                  break;
-                }
-              }
-            }
+          if (app && (app.id || app.name)) {
+            const matchedKey = findMatchingKey(app);
             if (matchedKey) {
-              map.set(matchedKey, { ...map.get(matchedKey), ...app, id: matchedKey });
+              map.set(matchedKey, mergeTwo(map.get(matchedKey)!, app));
             } else {
-              map.set(app.id, app);
+              const newId = app.id || `app-${Date.now()}`;
+              map.set(newId, { ...app, id: newId });
             }
           }
         }
@@ -51,20 +82,9 @@ export function mergeWithInstitutionalApplications(incomingApps: StudentApplicat
   // 3. Overlay incoming applications (e.g. from backend or active session)
   for (const app of incomingApps) {
     if (app && (app.id || app.name)) {
-      let matchedKey = app.id && map.has(app.id) ? app.id : null;
-      if (!matchedKey) {
-        for (const [k, v] of map.entries()) {
-          const nameMatch = v.name && app.name && v.name.trim().toLowerCase() === app.name.trim().toLowerCase();
-          const rollMatch = v.rollNumber && app.rollNumber && v.rollNumber === app.rollNumber;
-          if (nameMatch || rollMatch) {
-            matchedKey = k;
-            break;
-          }
-        }
-      }
-
+      const matchedKey = findMatchingKey(app);
       if (matchedKey) {
-        map.set(matchedKey, { ...map.get(matchedKey), ...app, id: matchedKey });
+        map.set(matchedKey, mergeTwo(map.get(matchedKey)!, app));
       } else {
         const newId = app.id || `app-${Date.now()}`;
         map.set(newId, { ...app, id: newId });
