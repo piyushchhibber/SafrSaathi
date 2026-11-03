@@ -37,6 +37,29 @@ const getInitials = (name?: string) =>
     .map((p) => p[0]?.toUpperCase())
     .join('');
 
+const getDistinctAvatar = (name: string, fallback?: string): string => {
+  if (fallback && fallback.trim() && !fallback.startsWith('data:') && fallback.length < 250) {
+    return fallback;
+  }
+  const lower = (name || '').toLowerCase();
+  if (lower.includes('mani')) {
+    return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('prakash')) {
+    return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('navjot')) {
+    return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('gurleen')) {
+    return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('parteek')) {
+    return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+};
+
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   userProfile,
   applications = [],
@@ -108,28 +131,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     ? '1 Month (Monthly Concession Valid)'
     : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)');
 
-  const getDistinctAvatar = (name: string, fallback?: string): string => {
-    if (fallback && fallback.trim() && !fallback.startsWith('data:') && fallback.length < 250) {
-      return fallback;
-    }
-    const lower = (name || '').toLowerCase();
-    if (lower.includes('mani')) {
-      return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('prakash')) {
-      return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('navjot')) {
-      return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('gurleen')) {
-      return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('parteek')) {
-      return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
-    }
-    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
-  };
+
 
   const studentAvatar = getDistinctAvatar(studentName, userProfile?.avatarUrl);
 

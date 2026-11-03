@@ -24,6 +24,29 @@ interface PassQrModalProps {
   onClose: () => void;
 }
 
+const getDistinctAvatar = (name: string, fallback?: string): string => {
+  if (fallback && fallback.trim() && !fallback.startsWith('data:') && fallback.length < 250) {
+    return fallback;
+  }
+  const lower = (name || '').toLowerCase();
+  if (lower.includes('mani')) {
+    return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('prakash')) {
+    return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('navjot')) {
+    return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('gurleen')) {
+    return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
+  }
+  if (lower.includes('parteek')) {
+    return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+};
+
 export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) => {
   const { t } = useTranslation();
   const isDirectTicket = Boolean(
@@ -199,28 +222,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     const displayPassType = passData.passType || 'Subsidized Student Concession';
     const displayExpires = passData.expiresAt || new Date(Date.now() + 30 * 86400 * 1000).toISOString().split('T')[0];
 
-    const getDistinctAvatar = (name: string, fallback?: string): string => {
-      if (fallback && fallback.trim() && !fallback.startsWith('data:') && fallback.length < 250) {
-        return fallback;
-      }
-      const lower = (name || '').toLowerCase();
-      if (lower.includes('mani')) {
-        return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
-      }
-      if (lower.includes('prakash')) {
-        return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
-      }
-      if (lower.includes('navjot')) {
-        return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
-      }
-      if (lower.includes('gurleen')) {
-        return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
-      }
-      if (lower.includes('parteek')) {
-        return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
-      }
-      return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
-    };
+
 
     const avatar = getDistinctAvatar(displayNameVal, (passData as any).avatarUrl);
     const qrAvatarUrl = avatar && !avatar.startsWith('data:') && avatar.length < 250 ? avatar : '';
