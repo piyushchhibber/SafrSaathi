@@ -230,7 +230,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     college: collegeLabel,
     validUntil: validityLabel,
     rollNo: rollLabel,
-    avatarUrl: studentAvatar,
+    avatarUrl: uiAvatar,
     aadhaarNo: maskAadhaar(userProfile?.aadhaarNumber || myApp?.aadhaarNumber),
     applicationId: isManiProfile ? 'app-179337695169' : myApp?.id,
     qrCodeDataUrl: qrCodeDataUrl,
@@ -239,6 +239,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   const uiAvatar = userProfile?.avatarUrl || studentAvatar;
+
+  // Persist student avatar in local storage so Conductor Scanner matches the student account photo exactly
+  useEffect(() => {
+    if (uiAvatar) {
+      try {
+        localStorage.setItem(`prtc_student_avatar_${studentName.toLowerCase()}`, uiAvatar);
+        localStorage.setItem(`prtc_student_avatar_${rollLabel}`, uiAvatar);
+        localStorage.setItem(`prtc_student_avatar_${passIdLabel}`, uiAvatar);
+        localStorage.setItem('prtc_last_student_avatar', uiAvatar);
+      } catch {}
+    }
+  }, [uiAvatar, studentName, rollLabel, passIdLabel]);
   const Avatar: React.FC<{ className: string }> = ({ className }) => (
     <img src={uiAvatar} alt={studentName} className={className} />
   );

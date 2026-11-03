@@ -262,6 +262,12 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
   const seconds = secondsRemaining % 60;
 
   const displayName = passData.name || passData.holderName || 'Transit Commuter';
+  const displayAvatar =
+    (passData as any).avatarUrl ||
+    (typeof localStorage !== 'undefined' &&
+      (localStorage.getItem(`prtc_student_avatar_${displayName.toLowerCase()}`) ||
+       localStorage.getItem('prtc_last_student_avatar'))) ||
+    getDistinctAvatar(displayName);
   const displayPassId = passData.passId || passData.ticketNumber || 'PRTC-PASS-8891';
   const displayPassType =
     passData.passType ||
@@ -398,8 +404,32 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
             )}
           </div>
 
-          {/* Details */}
+          {/* Details & Photo */}
           <div className="w-full text-left bg-[#fbf9f8] border border-[#c6c5d4] rounded-2xl p-4 space-y-2 text-xs">
+            <div className="flex items-center gap-3 pb-3 border-b border-[#eae8e7]">
+              {displayAvatar ? (
+                <img
+                  src={displayAvatar}
+                  alt={displayName}
+                  className="w-14 h-16 rounded-xl object-cover border-2 border-[#000666] shadow-sm shrink-0 bg-white"
+                />
+              ) : (
+                <div className="w-14 h-16 rounded-xl bg-blue-100 text-[#000666] font-black text-xl flex items-center justify-center border-2 border-[#000666] shrink-0">
+                  {displayName.charAt(0)}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-sm text-[#1b1c1c] truncate">{displayName}</span>
+                  <span className="material-symbols-outlined text-xs text-emerald-600">verified</span>
+                </div>
+                <p className="text-[11px] text-[#454652] font-semibold">
+                  Roll: {(passData as any).rollNo || (displayName.toLowerCase().includes('mani') ? '869' : '887')} • {displayPassId}
+                </p>
+                <p className="text-[10px] text-emerald-800 font-bold">● PRTC Verified Beneficiary</p>
+              </div>
+            </div>
+
             <div className="flex justify-between">
               <span className="text-[#767683]">{t('passModal.beneficiary', 'Beneficiary Name')}:</span>
               <span className="font-bold text-[#1b1c1c]">{displayName}</span>

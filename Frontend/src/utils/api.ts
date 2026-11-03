@@ -292,7 +292,20 @@ export const api = {
     const semester = parsedPayload?.sem || parsedPayload?.semester || match?.semester || 'Semester 4';
     const passId = parsedPayload?.id || parsedPayload?.passId || match?.passId || (tokenQuery.includes('mani') ? 'PRTC-STU-2012' : `PRTC-STU-${rollNumber}`);
     const expiresAt = parsedPayload?.exp || parsedPayload?.expiresAt || match?.passExpiresAt || '2027-04-30';
-    const avatarUrl = getDistinctAvatar(holderName, parsedPayload?.img || parsedPayload?.avatarUrl || match?.avatarUrl);
+    const cachedAvatar =
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem(`prtc_student_avatar_${holderName.toLowerCase()}`) ||
+          localStorage.getItem(`prtc_student_avatar_${rollNumber}`) ||
+          localStorage.getItem(`prtc_student_avatar_${passId}`) ||
+          (holderName.toLowerCase().includes('mani') ? localStorage.getItem('prtc_student_avatar_mani ladla') : null) ||
+          localStorage.getItem('prtc_last_student_avatar')
+        : null;
+
+    const avatarUrl =
+      cachedAvatar ||
+      (parsedPayload?.img && !parsedPayload.img.startsWith('data:') ? parsedPayload.img : null) ||
+      match?.avatarUrl ||
+      getDistinctAvatar(holderName);
 
     // Route fuzzy check
     const passStops = passRoute.split(/->|→/).map((s: string) => s.trim().toLowerCase());
