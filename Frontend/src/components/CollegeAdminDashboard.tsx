@@ -10,6 +10,7 @@ interface CollegeAdminDashboardProps {
   applications: StudentApplication[];
   onUpdateApplication: (app: StudentApplication) => void;
   onOpenEditProfile: () => void;
+  onOpenWallet?: () => void;
 }
 
 export const CollegeAdminDashboard: React.FC<CollegeAdminDashboardProps> = ({
@@ -18,6 +19,7 @@ export const CollegeAdminDashboard: React.FC<CollegeAdminDashboardProps> = ({
   applications,
   onUpdateApplication,
   onOpenEditProfile,
+  onOpenWallet,
 }) => {
   const currentCollegeName = userProfile.college || userProfile.institution || 'All Colleges (All Punjab Campuses)';
   const [selectedCollege, setSelectedCollege] = useState<string>(currentCollegeName);

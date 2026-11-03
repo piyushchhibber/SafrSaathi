@@ -103,7 +103,7 @@ runTest('College Admin applies official virtual stamp', () => {
 // 4. Role Switch to PRTC Admin (Incoming Server Sync with older or pending state)
 runTest('Role switch to PRTC Admin preserves College Stamp against stale server payloads', () => {
   // Simulate server returning stale or pending data for the same student
-  const staleServerApp: StudentApplication = {
+  const staleServerApp = {
     id: 'app-prakash-singh-101',
     studentId: 'usr-bfad416f6c62',
     name: 'PRAKASH KUMAR SINGH',
@@ -112,7 +112,7 @@ runTest('Role switch to PRTC Admin preserves College Stamp against stale server 
     collegeName: 'Chandigarh Engineering College-CGC Landran',
     status: 'pending', // stale server status
     course: 'B.Tech Computer Science & Engg',
-  };
+  } as StudentApplication;
 
   const merged = mergeWithInstitutionalApplications([staleServerApp]);
   const matched = merged.find(a => a.rollNumber === '2554887' || a.studentId === 'usr-bfad416f6c62');

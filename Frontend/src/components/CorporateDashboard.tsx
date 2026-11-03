@@ -7,12 +7,14 @@ interface CorporateDashboardProps {
   userProfile: UserProfile;
   onOpenPassModal: (passData: any) => void;
   onOpenEditProfile: () => void;
+  onOpenWallet?: () => void;
 }
 
 export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
   userProfile,
   onOpenPassModal,
   onOpenEditProfile,
+  onOpenWallet,
 }) => {
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState('Chandigarh ISBT 43 -> Mohali Quark City / IT Park');

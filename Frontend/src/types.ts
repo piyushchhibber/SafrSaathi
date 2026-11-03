@@ -51,6 +51,7 @@ export interface StudentApplication {
   originalFare?: number;
   passIssuedAt?: string;
   passExpiresAt?: string;
+  passId?: string;
 }
 
 export interface College {
