@@ -13,6 +13,16 @@ export function getStoredApplications(fallback: StudentApplication[] = mockStude
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Merge any fallback applications that are not yet in localStorage
+        const existingIds = new Set(parsed.map((a: StudentApplication) => a.id));
+        const missing = fallback.filter((a) => !existingIds.has(a.id));
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing];
+          try {
+            localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(merged));
+          } catch {}
+          return merged;
+        }
         return parsed;
       }
     }

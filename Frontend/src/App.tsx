@@ -6,7 +6,7 @@ import {
   mockUserProfile,
   mockSchedules,
 } from './data/mockData';
-import { getStoredSession, saveStoredSession } from './utils/storage';
+import { getStoredSession, saveStoredSession, getStoredApplications, saveStoredApplications, getStoredTickets, saveStoredTickets } from './utils/storage';
 import { api } from './utils/api';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -41,8 +41,8 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState<PortalRole>('gateway');
   const [colleges, setColleges] = useState(mockColleges);
   const [schedules, setSchedules] = useState(mockSchedules);
-  const [applications, setApplications] = useState<StudentApplication[]>([]);
-  const [tickets, setTickets] = useState<BusTicket[]>([]);
+  const [applications, setApplications] = useState<StudentApplication[]>(() => getStoredApplications());
+  const [tickets, setTickets] = useState<BusTicket[]>(() => getStoredTickets());
   const [userProfile, setUserProfile] = useState<UserProfile>(mockUserProfile);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(Boolean(localStorage.getItem('prtc_access_token')));
 
@@ -59,15 +59,21 @@ export default function App() {
   const loadUserData = () => {
     api.listApplications()
       .then((serverApps) => {
-        if (serverApps) setApplications(serverApps);
+        if (serverApps && serverApps.length > 0) {
+          setApplications(serverApps);
+          saveStoredApplications(serverApps);
+        }
       })
-      .catch((err) => console.warn('Could not load applications from server', err));
+      .catch((err) => console.warn('Could not load applications from server; using cached/demo applications', err));
 
     api.listTickets()
       .then((serverTickets) => {
-        if (serverTickets) setTickets(serverTickets);
+        if (serverTickets && serverTickets.length > 0) {
+          setTickets(serverTickets);
+          saveStoredTickets(serverTickets);
+        }
       })
-      .catch((err) => console.warn('Could not load tickets from server', err));
+      .catch((err) => console.warn('Could not load tickets from server; using cached/demo tickets', err));
   };
 
   // Bootstrap public schedules & colleges + Restore verified server session
@@ -76,8 +82,18 @@ export default function App() {
       .then((data) => {
         if (data.colleges?.length) setColleges(data.colleges);
         if (data.schedules?.length) setSchedules(data.schedules);
+        if (data.applications?.length) {
+          setApplications(data.applications);
+          saveStoredApplications(data.applications);
+        }
+        if (data.tickets?.length) {
+          setTickets(data.tickets);
+          saveStoredTickets(data.tickets);
+        }
       })
       .catch((err) => console.warn('Backend unavailable; using bundled demo data.', err));
+
+    loadUserData();
 
     const token = localStorage.getItem('prtc_access_token');
     if (token) {
@@ -122,8 +138,8 @@ export default function App() {
     localStorage.removeItem('prtc_active_session_v2');
     setIsAuthenticated(false);
     setUserProfile(mockUserProfile);
-    setApplications([]);
-    setTickets([]);
+    setApplications(getStoredApplications());
+    setTickets(getStoredTickets());
     setCurrentRole('gateway');
   };
 
@@ -134,19 +150,35 @@ export default function App() {
 
   // Application Updates (Approved by College or PRTC)
   const handleUpdateApplication = (updatedApp: StudentApplication) => {
-    setApplications((prev) => prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)));
+    setApplications((prev) => {
+      const updated = prev.map((a) => (a.id === updatedApp.id ? updatedApp : a));
+      saveStoredApplications(updated);
+      return updated;
+    });
     api.updateApplication(updatedApp)
       .then((saved) => {
-        setApplications((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+        setApplications((prev) => {
+          const updated = prev.map((a) => (a.id === saved.id ? saved : a));
+          saveStoredApplications(updated);
+          return updated;
+        });
       })
       .catch((err) => console.warn(`Could not sync to backend: ${err.message}`));
   };
 
   const handleNewStudentApplication = (newApp: StudentApplication) => {
-    setApplications((prev) => [newApp, ...prev.filter((a) => a.id !== newApp.id)]);
+    setApplications((prev) => {
+      const updated = [newApp, ...prev.filter((a) => a.id !== newApp.id)];
+      saveStoredApplications(updated);
+      return updated;
+    });
     api.createApplication(newApp)
       .then((saved) => {
-        setApplications((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)]);
+        setApplications((prev) => {
+          const updated = [saved, ...prev.filter((a) => a.id !== saved.id)];
+          saveStoredApplications(updated);
+          return updated;
+        });
       })
       .catch((err) => console.warn(`Could not sync application to backend: ${err.message}`));
   };
