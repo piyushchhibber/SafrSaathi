@@ -244,7 +244,9 @@ export const api = {
     ];
 
     const getDistinctAvatar = (name: string, fallback?: string): string => {
-      if (fallback && fallback.trim()) return fallback;
+      if (fallback && fallback.trim() && !fallback.startsWith('data:') && fallback.length < 250) {
+        return fallback;
+      }
       const lower = (name || '').toLowerCase();
       if (lower.includes('mani')) {
         return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';

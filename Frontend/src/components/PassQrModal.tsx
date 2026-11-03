@@ -200,7 +200,9 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     const displayExpires = passData.expiresAt || new Date(Date.now() + 30 * 86400 * 1000).toISOString().split('T')[0];
 
     const getDistinctAvatar = (name: string, fallback?: string): string => {
-      if (fallback && fallback.trim()) return fallback;
+      if (fallback && fallback.trim() && !fallback.startsWith('data:') && fallback.length < 250) {
+        return fallback;
+      }
       const lower = (name || '').toLowerCase();
       if (lower.includes('mani')) {
         return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
@@ -221,6 +223,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     };
 
     const avatar = getDistinctAvatar(displayNameVal, (passData as any).avatarUrl);
+    const qrAvatarUrl = avatar && !avatar.startsWith('data:') && avatar.length < 250 ? avatar : '';
 
     // Compact JSON schema for instant mobile camera decode
     const compactObj = {
@@ -231,7 +234,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
       rt: displayRouteVal,
       c: displayCollege,
       pt: displayPassType,
-      img: avatar,
+      img: qrAvatarUrl,
       exp: displayExpires,
     };
 
@@ -242,7 +245,13 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
       errorCorrectionLevel: 'M',
     })
       .then(setLocalQr)
-      .catch(() => setLocalQr(null));
+      .catch((err) => {
+        console.warn('QR payload error, generating minimal QR:', err);
+        const minimal = `SAFRSAATHI:{"id":"${displayPassIdVal}","r":"${displayRoll}","n":"${displayNameVal}"}`;
+        QRCode.toDataURL(minimal, { margin: 1, width: 320, errorCorrectionLevel: 'L' })
+          .then(setLocalQr)
+          .catch(() => {});
+      });
   }, [passData]);
 
   if (!passData) return null;

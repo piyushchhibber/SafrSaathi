@@ -109,7 +109,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)');
 
   const getDistinctAvatar = (name: string, fallback?: string): string => {
-    if (fallback && fallback.trim()) return fallback;
+    if (fallback && fallback.trim() && !fallback.startsWith('data:') && fallback.length < 250) {
+      return fallback;
+    }
     const lower = (name || '').toLowerCase();
     if (lower.includes('mani')) {
       return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
@@ -146,6 +148,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     const displayPassType = myApp.passType || 'Subsidized Student Concession';
     const displayExpires = myApp.passExpiresAt || new Date(Date.now() + 30 * 86400 * 1000).toISOString().split('T')[0];
 
+    const qrAvatarUrl = studentAvatar && !studentAvatar.startsWith('data:') && studentAvatar.length < 250 ? studentAvatar : '';
     const compactObj = {
       t: 'PRTC',
       id: displayPassIdVal,
@@ -154,7 +157,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       rt: displayRouteVal,
       c: displayCollege,
       pt: displayPassType,
-      img: studentAvatar,
+      img: qrAvatarUrl,
       exp: displayExpires,
     };
 
@@ -163,7 +166,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       .then((url) => {
         setQrCodeDataUrl(url);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('QR payload error, generating minimal QR:', err);
+        const minimal = `SAFRSAATHI:{"id":"${displayPassIdVal}","r":"${displayRoll}","n":"${displayNameVal}"}`;
+        QRCode.toDataURL(minimal, { margin: 1, width: 320, errorCorrectionLevel: 'L' })
+          .then((url) => setQrCodeDataUrl(url))
+          .catch(() => {});
+      });
 
     // Also attempt backend fetch in the background if token exists
     const token = localStorage.getItem(TOKEN_KEY);
@@ -229,8 +238,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     duration: isManiProfile ? 'Monthly' : myApp?.duration,
   };
 
+  const uiAvatar = userProfile?.avatarUrl || studentAvatar;
   const Avatar: React.FC<{ className: string }> = ({ className }) => (
-    <img src={studentAvatar} alt={studentName} className={className} />
+    <img src={uiAvatar} alt={studentName} className={className} />
   );
 
   return (
