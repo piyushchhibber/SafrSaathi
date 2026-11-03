@@ -77,4 +77,7 @@ def ensure_columns():
         t_cols = {c["name"] for c in inspector.get_columns("tickets")}
         with engine.begin() as conn:
             if "paid_via_wallet" not in t_cols:
-                conn.execute(text("ALTER TABLE tickets ADD COLUMN paid_via_wallet BOOLEAN DEFAULT 0"))
+                try:
+                    conn.execute(text("ALTER TABLE tickets ADD COLUMN paid_via_wallet BOOLEAN DEFAULT FALSE"))
+                except Exception as exc:
+                    print(f"Migration notice for tickets.paid_via_wallet: {exc}")
