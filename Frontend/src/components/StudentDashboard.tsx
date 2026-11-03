@@ -85,6 +85,50 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [qrExpiresAt, setQrExpiresAt] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
 
+  const isManiProfile = Boolean(
+    userProfile?.name?.toLowerCase().includes('mani') ||
+    userProfile?.email?.toLowerCase().includes('mani')
+  );
+
+  const studentName = userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash');
+  const collegeLabel =
+    userProfile?.college || userProfile?.institution || myApp?.collegeName || 'Chandigarh Engineering College-CGC Landran';
+  const rollLabel = isManiProfile ? '869' : (userProfile?.rollNo || myApp?.rollNumber || '887');
+  const passIdLabel = isApproved
+    ? (isManiProfile
+        ? 'PRTC-STU-2012'
+        : ((myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
+           (userProfile?.passId && !userProfile.passId.toLowerCase().startsWith('usr-') ? userProfile.passId : undefined) ||
+           myApp?.id ||
+           'PRTC-STU-887'))
+    : 'Not issued';
+  const validityLabel = isManiProfile
+    ? '1 Month (Monthly Concession Valid)'
+    : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)');
+
+  const getDistinctAvatar = (name: string, fallback?: string): string => {
+    if (fallback && fallback.trim()) return fallback;
+    const lower = (name || '').toLowerCase();
+    if (lower.includes('mani')) {
+      return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('prakash')) {
+      return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('navjot')) {
+      return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('gurleen')) {
+      return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('parteek')) {
+      return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+  };
+
+  const studentAvatar = getDistinctAvatar(studentName, userProfile?.avatarUrl);
+
   const isApproved = myApp?.status === 'approved';
 
   // Fetch or generate the signed QR code once the pass is fully approved
@@ -167,50 +211,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   const { stage1Status, stage2Status } = getApprovalStages(myApp);
-
-  const isManiProfile = Boolean(
-    userProfile?.name?.toLowerCase().includes('mani') ||
-    userProfile?.email?.toLowerCase().includes('mani')
-  );
-
-  const studentName = userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash');
-  const collegeLabel =
-    userProfile?.college || userProfile?.institution || myApp?.collegeName || 'Chandigarh Engineering College-CGC Landran';
-  const rollLabel = isManiProfile ? '869' : (userProfile?.rollNo || myApp?.rollNumber || '887');
-  const passIdLabel = isApproved
-    ? (isManiProfile
-        ? 'PRTC-STU-2012'
-        : ((myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
-           (userProfile?.passId && !userProfile.passId.toLowerCase().startsWith('usr-') ? userProfile.passId : undefined) ||
-           myApp?.id ||
-           'PRTC-STU-887'))
-    : 'Not issued';
-  const validityLabel = isManiProfile
-    ? '1 Month (Monthly Concession Valid)'
-    : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)');
-
-  const getDistinctAvatar = (name: string, fallback?: string): string => {
-    if (fallback && fallback.trim()) return fallback;
-    const lower = (name || '').toLowerCase();
-    if (lower.includes('mani')) {
-      return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('prakash')) {
-      return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('navjot')) {
-      return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('gurleen')) {
-      return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
-    }
-    if (lower.includes('parteek')) {
-      return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
-    }
-    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
-  };
-
-  const studentAvatar = getDistinctAvatar(studentName, userProfile?.avatarUrl);
 
   const virtualPassData = {
     ticketNumber: passIdLabel,
