@@ -98,6 +98,14 @@ export default function App() {
     loadUserData();
 
     const token = localStorage.getItem('prtc_access_token');
+    const storedSession = getStoredSession();
+    if (storedSession?.profile) {
+      setUserProfile(storedSession.profile);
+      setIsAuthenticated(true);
+      const userRole = storedSession.profile.roleType || 'gateway';
+      setCurrentRole(roleMapping[userRole] || 'gateway');
+    }
+
     if (token) {
       api.me()
         .then((res) => {
@@ -111,13 +119,15 @@ export default function App() {
           }
         })
         .catch((err) => {
-          console.warn('Session expired or invalid token:', err);
-          localStorage.removeItem('prtc_access_token');
-          localStorage.removeItem('prtc_active_session_v2');
-          setIsAuthenticated(false);
-          setCurrentRole('gateway');
+          console.warn('Session check note:', err?.message || err);
+          if (err?.message && err.message.includes('401')) {
+            localStorage.removeItem('prtc_access_token');
+            localStorage.removeItem('prtc_active_session_v2');
+            setIsAuthenticated(false);
+            setCurrentRole('gateway');
+          }
         });
-    } else {
+    } else if (!storedSession?.profile) {
       setIsAuthenticated(false);
       setCurrentRole('gateway');
     }

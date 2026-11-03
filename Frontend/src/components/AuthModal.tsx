@@ -4,6 +4,7 @@ import { UserRoleType, UserProfile, College } from '../types';
 import { mockColleges } from '../data/mockData';
 import confetti from 'canvas-confetti';
 import { api } from '../utils/api';
+import { getStoredUsers, saveStoredUsers, RegisteredUserRecord } from '../utils/storage';
 
 declare global {
   interface Window {
@@ -418,33 +419,226 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleCorporateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const corpProfile: UserProfile = {
-      name: isSignUp ? corpName : 'Vikram Malhotra',
-      passId: 'PRTC-CORP-402',
-      email: corpEmail || 'commute@infosys.com',
-      phone: corpPhone || '+91 98722 44100',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-      roleType: 'corporate',
-      institution: isSignUp ? corpCompanyName : 'Infosys Ltd (Mohali IT Park)',
-      companyName: isSignUp ? corpCompanyName : 'Infosys Ltd',
-      roleTitle: 'Corporate Transit Program Admin',
-    };
-    triggerOtpVerification(corpProfile, 'corporate', corpPhone || '+91 98722 44100');
+    if (isSignUp) {
+      const cleanName = corpName.trim() || 'Corporate Commuter';
+      const cleanCompany = corpCompanyName.trim() || 'Infosys Limited';
+      const cleanEmail = corpEmail.trim() || `${cleanName.toLowerCase().replace(/\s+/g, '')}@infosys.com`;
+      const cleanPhone = corpPhone.trim() || '+91 98722 44100';
+      const newCorpId = `CORP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const corpProfile: UserProfile = {
+        name: cleanName,
+        passId: `PRTC-CORP-${Math.floor(1000 + Math.random() * 9000)}`,
+        email: cleanEmail,
+        phone: cleanPhone,
+        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanName)}`,
+        roleType: 'corporate',
+        institution: `${cleanCompany} (Mohali IT Park)`,
+        companyName: cleanCompany,
+        corporateId: newCorpId,
+        roleTitle: 'Corporate Commute Member',
+      };
+
+      try {
+        const storedUsers = getStoredUsers();
+        const existingIdx = storedUsers.findIndex(
+          (u) =>
+            u.roleType === 'corporate' &&
+            (u.email.toLowerCase() === cleanEmail.toLowerCase() ||
+             u.name.toLowerCase() === cleanName.toLowerCase())
+        );
+        const record: RegisteredUserRecord = {
+          id: `usr-corp-${Date.now()}`,
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          roleType: 'corporate',
+          institution: cleanCompany,
+          companyName: cleanCompany,
+          registeredAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          lastLoginAt: 'Just now',
+          avatarUrl: corpProfile.avatarUrl,
+          passId: corpProfile.passId,
+          corporateId: newCorpId,
+        };
+        if (existingIdx >= 0) {
+          storedUsers[existingIdx] = { ...storedUsers[existingIdx], ...record };
+        } else {
+          storedUsers.push(record);
+        }
+        saveStoredUsers(storedUsers);
+      } catch (err) {
+        console.warn('Could not save corporate user', err);
+      }
+
+      triggerOtpVerification(corpProfile, 'corporate', cleanPhone);
+    } else {
+      // Sign In mode
+      const cleanIdent = (corpEmail || '').trim();
+      const storedUsers = getStoredUsers();
+      const matched = storedUsers.find(
+        (u) =>
+          u.roleType === 'corporate' &&
+          cleanIdent &&
+          (u.email.toLowerCase() === cleanIdent.toLowerCase() ||
+           u.name.toLowerCase() === cleanIdent.toLowerCase() ||
+           (u.passId && u.passId.toLowerCase() === cleanIdent.toLowerCase()) ||
+           (u.id && u.id.toLowerCase() === cleanIdent.toLowerCase()))
+      );
+
+      let corpProfile: UserProfile;
+
+      if (matched) {
+        corpProfile = {
+          name: matched.name,
+          passId: matched.passId || `PRTC-CORP-${matched.id.slice(-4)}`,
+          email: matched.email,
+          phone: matched.phone || '+91 98722 44100',
+          avatarUrl: matched.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(matched.name)}`,
+          roleType: 'corporate',
+          institution: matched.institution || 'Infosys Limited',
+          companyName: matched.companyName || matched.institution || 'Infosys Limited',
+          corporateId: matched.corporateId || `CORP-${matched.id.slice(-4)}`,
+          roleTitle: 'Corporate Commute Member',
+        };
+      } else if (!cleanIdent || cleanIdent.toLowerCase().includes('vikram') || cleanIdent.toLowerCase().includes('commute@infosys')) {
+        // Pre-configured Demo Profile: Vikram Malhotra
+        corpProfile = {
+          name: 'Vikram Malhotra',
+          passId: 'PRTC-CORP-402',
+          email: 'commute@infosys.com',
+          phone: '+91 98722 44100',
+          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+          roleType: 'corporate',
+          institution: 'Infosys Ltd (Mohali IT Park)',
+          companyName: 'Infosys Ltd',
+          corporateId: 'CORP-PB-091',
+          roleTitle: 'Corporate Transit Program Admin',
+        };
+      } else {
+        // User typed a specific commuter name or email (e.g. "Bheem" or "bheem@...")
+        const rawName = cleanIdent.includes('@') ? cleanIdent.split('@')[0] : cleanIdent;
+        const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        const newCorpId = `CORP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        corpProfile = {
+          name: displayName,
+          passId: `PRTC-CORP-${Math.floor(1000 + Math.random() * 9000)}`,
+          email: cleanIdent.includes('@') ? cleanIdent : `${cleanIdent.toLowerCase()}@infosys.com`,
+          phone: '+91 98722 44100',
+          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName)}`,
+          roleType: 'corporate',
+          institution: 'Infosys Limited',
+          companyName: 'Infosys Limited',
+          corporateId: newCorpId,
+          roleTitle: 'Corporate Transit Commuter',
+        };
+
+        try {
+          storedUsers.push({
+            id: `usr-corp-${Date.now()}`,
+            name: displayName,
+            email: corpProfile.email,
+            phone: corpProfile.phone,
+            roleType: 'corporate',
+            institution: 'Infosys Limited',
+            companyName: 'Infosys Limited',
+            registeredAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+            lastLoginAt: 'Just now',
+            avatarUrl: corpProfile.avatarUrl,
+            passId: corpProfile.passId,
+            corporateId: newCorpId,
+          });
+          saveStoredUsers(storedUsers);
+        } catch {}
+      }
+
+      triggerOtpVerification(corpProfile, 'corporate', corpProfile.phone || '+91 98722 44100');
+    }
   };
 
   const handlePassengerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const passProfile: UserProfile = {
-      name: isSignUp ? passName : 'Gurpreet Kaur',
-      passId: 'PRTC-PASS-091',
-      email: passEmail || 'gurpreet.k@gmail.com',
-      phone: passPhone || '+91 98881 22334',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-      roleType: 'passenger',
-      institution: 'Direct PRTC Daily Commuter',
-      roleTitle: 'Daily Commuter Pass Holder',
-    };
-    triggerOtpVerification(passProfile, 'passenger', passPhone || '+91 98881 22334');
+    if (isSignUp) {
+      const cleanName = passName.trim() || 'Passenger Commuter';
+      const cleanEmail = passEmail.trim() || `${cleanName.toLowerCase().replace(/\s+/g, '')}@gmail.com`;
+      const cleanPhone = passPhone.trim() || '+91 98881 22334';
+      const passProfile: UserProfile = {
+        name: cleanName,
+        passId: `PRTC-PASS-${Math.floor(100 + Math.random() * 900)}`,
+        email: cleanEmail,
+        phone: cleanPhone,
+        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanName)}`,
+        roleType: 'passenger',
+        institution: 'Direct PRTC Daily Commuter',
+        roleTitle: 'Daily Commuter Pass Holder',
+      };
+      try {
+        const storedUsers = getStoredUsers();
+        storedUsers.push({
+          id: `usr-pass-${Date.now()}`,
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          roleType: 'passenger',
+          registeredAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          lastLoginAt: 'Just now',
+          avatarUrl: passProfile.avatarUrl,
+        });
+        saveStoredUsers(storedUsers);
+      } catch {}
+      triggerOtpVerification(passProfile, 'passenger', cleanPhone);
+    } else {
+      const cleanIdent = (passEmail || '').trim();
+      const storedUsers = getStoredUsers();
+      const matched = storedUsers.find(
+        (u) =>
+          u.roleType === 'passenger' &&
+          cleanIdent &&
+          (u.email.toLowerCase() === cleanIdent.toLowerCase() ||
+           u.name.toLowerCase() === cleanIdent.toLowerCase() ||
+           u.id.toLowerCase() === cleanIdent.toLowerCase())
+      );
+
+      let passProfile: UserProfile;
+      if (matched) {
+        passProfile = {
+          name: matched.name,
+          passId: matched.passId || `PRTC-PASS-${matched.id.slice(-4)}`,
+          email: matched.email,
+          phone: matched.phone || '+91 98881 22334',
+          avatarUrl: matched.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(matched.name)}`,
+          roleType: 'passenger',
+          institution: 'Direct PRTC Daily Commuter',
+          roleTitle: 'Daily Commuter Pass Holder',
+        };
+      } else if (!cleanIdent || cleanIdent.toLowerCase().includes('priya') || cleanIdent.toLowerCase().includes('gurpreet')) {
+        passProfile = {
+          name: 'Priya Sharma',
+          passId: 'PRTC-PASS-091',
+          email: 'priya.sharma@gmail.com',
+          phone: '+91 98881 22334',
+          avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+          roleType: 'passenger',
+          institution: 'Direct PRTC Daily Commuter',
+          roleTitle: 'Daily Commuter Pass Holder',
+        };
+      } else {
+        const rawName = cleanIdent.includes('@') ? cleanIdent.split('@')[0] : cleanIdent;
+        const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        passProfile = {
+          name: displayName,
+          passId: `PRTC-PASS-${Math.floor(100 + Math.random() * 900)}`,
+          email: cleanIdent.includes('@') ? cleanIdent : `${cleanIdent.toLowerCase()}@gmail.com`,
+          phone: '+91 98881 22334',
+          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName)}`,
+          roleType: 'passenger',
+          institution: 'Direct PRTC Daily Commuter',
+          roleTitle: 'Daily Commuter Pass Holder',
+        };
+      }
+      triggerOtpVerification(passProfile, 'passenger', passProfile.phone || '+91 98881 22334');
+    }
   };
 
   const handleCollegeAdminSubmit = (e: React.FormEvent) => {

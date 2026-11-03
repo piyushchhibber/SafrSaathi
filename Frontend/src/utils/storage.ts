@@ -140,6 +140,9 @@ export interface RegisteredUserRecord {
   phone: string;
   roleType: string;
   institution?: string;
+  companyName?: string;
+  passId?: string;
+  corporateId?: string;
   registeredAt: string;
   lastLoginAt: string;
   avatarUrl?: string;

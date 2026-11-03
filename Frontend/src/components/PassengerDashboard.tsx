@@ -52,7 +52,7 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
   const [paymentItemData, setPaymentItemData] = useState<PaymentItemDetails | null>(null);
 
   const isDemoPassenger =
-    !userProfile?.name ||
+    Boolean(userProfile?.name) &&
     userProfile.name.toLowerCase().includes('priya');
 
   const passengerStorageKey = `prtc_passenger_tickets_${(userProfile?.name || 'demo').toLowerCase().replace(/\s+/g, '_')}`;
@@ -72,6 +72,25 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
     // New passenger starts with clean ticket roster until they buy a ticket or pass
     return [];
   });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(passengerStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setLocalTickets(parsed);
+          return;
+        }
+      }
+    } catch {}
+
+    if (isDemoPassenger) {
+      setLocalTickets(tickets && tickets.length > 0 ? tickets : []);
+    } else {
+      setLocalTickets([]);
+    }
+  }, [userProfile?.name, passengerStorageKey, isDemoPassenger, tickets]);
 
   const selectedRouteObj = PASSENGER_POPULAR_ROUTES[selectedRouteIdx] || PASSENGER_POPULAR_ROUTES[0];
 

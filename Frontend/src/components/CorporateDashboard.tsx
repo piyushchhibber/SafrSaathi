@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, BusTicket } from '../types';
 import confetti from 'canvas-confetti';
 import { PaymentGatewayModal, PaymentItemDetails } from './PaymentGatewayModal';
@@ -31,9 +31,9 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
 
   // Check if current user is the pre-configured demo user (Vikram/Rohit) vs a newly registered commuter (e.g. Bheem)
   const isDemoCorporate =
-    !userProfile?.name ||
-    userProfile.name.toLowerCase().includes('vikram') ||
-    userProfile.name.toLowerCase().includes('rohit');
+    Boolean(userProfile?.name) &&
+    (userProfile.name.toLowerCase().includes('vikram') ||
+     userProfile.name.toLowerCase().includes('rohit'));
 
   const storageKey = `prtc_corp_passes_${(userProfile?.name || 'demo').toLowerCase().replace(/\s+/g, '_')}`;
 
@@ -59,7 +59,7 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
           status: 'active',
           validUntil: '1 Month Active (30 Days)',
           companyName: userProfile?.companyName || 'Infosys Limited',
-          holderName: `${userProfile?.name || 'Rohit Verma'} (${userProfile?.designation || 'Lead'})`,
+          holderName: `${userProfile?.name || 'Vikram Malhotra'} (${userProfile?.designation || 'Lead'})`,
         },
         {
           id: 'corp-pass-2',
@@ -79,6 +79,57 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
     // New commuter account has NO pre-existing passes until purchased
     return [];
   });
+
+  // Re-sync tickets and profile state whenever userProfile prop changes
+  useEffect(() => {
+    if (userProfile?.name) setEmployeeName(userProfile.name);
+    if (userProfile?.corporateId) setEmployeeId(userProfile.corporateId);
+    if (userProfile?.companyName) setCompanyName(userProfile.companyName);
+
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setCorporateTickets(parsed);
+          return;
+        }
+      }
+    } catch {}
+
+    if (isDemoCorporate) {
+      setCorporateTickets([
+        {
+          id: 'corp-pass-1',
+          ticketNumber: userProfile?.passId || 'CORP-INF-8849',
+          title: 'Corporate Executive 1-Month Pass',
+          type: 'corporate_pass',
+          route: 'Chandigarh ISBT 43 -> Mohali Quark City / IT Park',
+          timestamp: '01 Aug 2026',
+          amount: 1450.0,
+          status: 'active',
+          validUntil: '1 Month Active (30 Days)',
+          companyName: userProfile?.companyName || 'Infosys Limited',
+          holderName: `${userProfile?.name || 'Vikram Malhotra'} (${userProfile?.designation || 'Lead'})`,
+        },
+        {
+          id: 'corp-pass-2',
+          ticketNumber: 'CORP-INF-9912',
+          title: 'Corporate Standard AC 1-Month Pass',
+          type: 'corporate_pass',
+          route: 'Ludhiana Bus Stand -> Khanna Industrial Area',
+          timestamp: '15 Jul 2026',
+          amount: 1200.0,
+          status: 'expired',
+          validUntil: 'Expired (1 Month Term Ended)',
+          companyName: userProfile?.companyName || 'Infosys Limited',
+          holderName: 'Aarav Patel (Software Engg)',
+        },
+      ]);
+    } else {
+      setCorporateTickets([]);
+    }
+  }, [userProfile?.name, storageKey, isDemoCorporate]);
 
   const activePass = corporateTickets.find((t) => t.status === 'active');
 
