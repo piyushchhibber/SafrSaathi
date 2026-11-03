@@ -29,36 +29,58 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentItemData, setPaymentItemData] = useState<PaymentItemDetails | null>(null);
 
-  const [corporateTickets, setCorporateTickets] = useState<BusTicket[]>([
-    {
-      id: 'corp-pass-1',
-      ticketNumber: userProfile?.passId || 'CORP-INF-8849',
-      title: 'Corporate Executive 1-Month Pass',
-      type: 'corporate_pass',
-      route: 'Chandigarh ISBT 43 -> Mohali Quark City / IT Park',
-      timestamp: '01 Aug 2026',
-      amount: 1450.0,
-      status: 'active',
-      validUntil: '1 Month Active (30 Days)',
-      companyName: userProfile?.companyName || 'Infosys Limited',
-      holderName: `${userProfile?.name || 'Rohit Verma'} (${userProfile?.designation || 'Lead'})`,
-    },
-    {
-      id: 'corp-pass-2',
-      ticketNumber: 'CORP-INF-9912',
-      title: 'Corporate Standard AC 1-Month Pass',
-      type: 'corporate_pass',
-      route: 'Ludhiana Bus Stand -> Khanna Industrial Area',
-      timestamp: '15 Jul 2026',
-      amount: 1200.0,
-      status: 'expired',
-      validUntil: 'Expired (1 Month Term Ended)',
-      companyName: userProfile.companyName || 'Infosys Limited',
-      holderName: 'Aarav Patel (Software Engg)',
-    },
-  ]);
+  // Check if current user is the pre-configured demo user (Vikram/Rohit) vs a newly registered commuter (e.g. Bheem)
+  const isDemoCorporate =
+    !userProfile?.name ||
+    userProfile.name.toLowerCase().includes('vikram') ||
+    userProfile.name.toLowerCase().includes('rohit');
 
-  const activePass = corporateTickets[0];
+  const storageKey = `prtc_corp_passes_${(userProfile?.name || 'demo').toLowerCase().replace(/\s+/g, '_')}`;
+
+  const [corporateTickets, setCorporateTickets] = useState<BusTicket[]>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+
+    if (isDemoCorporate) {
+      return [
+        {
+          id: 'corp-pass-1',
+          ticketNumber: userProfile?.passId || 'CORP-INF-8849',
+          title: 'Corporate Executive 1-Month Pass',
+          type: 'corporate_pass',
+          route: 'Chandigarh ISBT 43 -> Mohali Quark City / IT Park',
+          timestamp: '01 Aug 2026',
+          amount: 1450.0,
+          status: 'active',
+          validUntil: '1 Month Active (30 Days)',
+          companyName: userProfile?.companyName || 'Infosys Limited',
+          holderName: `${userProfile?.name || 'Rohit Verma'} (${userProfile?.designation || 'Lead'})`,
+        },
+        {
+          id: 'corp-pass-2',
+          ticketNumber: 'CORP-INF-9912',
+          title: 'Corporate Standard AC 1-Month Pass',
+          type: 'corporate_pass',
+          route: 'Ludhiana Bus Stand -> Khanna Industrial Area',
+          timestamp: '15 Jul 2026',
+          amount: 1200.0,
+          status: 'expired',
+          validUntil: 'Expired (1 Month Term Ended)',
+          companyName: userProfile?.companyName || 'Infosys Limited',
+          holderName: 'Aarav Patel (Software Engg)',
+        },
+      ];
+    }
+    // New commuter account has NO pre-existing passes until purchased
+    return [];
+  });
+
+  const activePass = corporateTickets.find((t) => t.status === 'active');
 
   const getBaseRate = () => {
     switch (passCategory) {
@@ -109,19 +131,23 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
     setIsPaymentModalOpen(false);
     const newPass: BusTicket = {
       id: generatedPass.id || `corp-pass-${Date.now()}`,
-      ticketNumber: generatedPass.ticketNumber,
-      title: generatedPass.title,
+      ticketNumber: generatedPass.ticketNumber || `CORP-${Math.floor(1000 + Math.random() * 9000)}`,
+      title: generatedPass.title || `Corporate ${passCategory} Pass (${passDuration})`,
       type: 'corporate_pass',
       route: selectedRoute,
       timestamp: 'Just now',
-      amount: generatedPass.amount,
+      amount: generatedPass.amount || calculateTotal(),
       status: 'active',
-      validUntil: generatedPass.validUntil,
+      validUntil: generatedPass.validUntil || (passDuration === 'Quarterly' ? '3 Months Active (90 Days)' : '1 Month Active (30 Days)'),
       companyName: companyName,
-      holderName: `${employeeName} (ID: ${employeeId})`,
+      holderName: `${employeeName || userProfile.name} (ID: ${employeeId})`,
     };
 
-    setCorporateTickets([newPass, ...corporateTickets]);
+    const updated = [newPass, ...corporateTickets];
+    setCorporateTickets(updated);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    } catch {}
     confetti({ particleCount: 80, spread: 70 });
   };
 
@@ -190,9 +216,15 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
               <span className="material-symbols-outlined text-[#000666] text-lg">badge</span>
               Corporate Digital Transit Pass
             </h3>
-            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-              Active Monthly Pass
-            </span>
+            {activePass ? (
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                Active Monthly Pass
+              </span>
+            ) : (
+              <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                Pass Not Issued
+              </span>
+            )}
           </div>
 
           {/* Authentic Corporate Pass Graphic Card */}
@@ -213,7 +245,7 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
                 <h4 className="font-extrabold text-base mt-1 text-white tracking-tight">
                   {userProfile.companyName || 'INFOSYS LIMITED'}
                 </h4>
-                <p className="text-[11px] text-[#bdc2ff]">{activePass?.title || 'Executive Monthly Transit Pass'}</p>
+                <p className="text-[11px] text-[#bdc2ff]">{activePass?.title || 'No Active Transit Pass'}</p>
               </div>
 
               <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
@@ -229,8 +261,8 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
                   alt={userProfile.name}
                   className="w-20 h-24 rounded-2xl object-cover border-2 border-white/40 shadow-md bg-white/10"
                 />
-                <div className="absolute -bottom-1.5 -left-1.5 bg-blue-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
-                  ACTIVE
+                <div className={`absolute -bottom-1.5 -left-1.5 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${activePass ? 'bg-blue-500' : 'bg-amber-600'}`}>
+                  {activePass ? 'ACTIVE' : 'NOT ISSUED'}
                 </div>
               </div>
 
@@ -248,8 +280,8 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
                   </div>
                   <div>
                     <span className="text-white/60 block text-[9px] uppercase font-bold">Pass ID</span>
-                    <span className="font-mono font-bold text-amber-300">
-                      {activePass?.ticketNumber || 'CORP-INF-8849'}
+                    <span className={`font-mono font-bold ${activePass ? 'text-amber-300' : 'text-gray-400'}`}>
+                      {activePass?.ticketNumber || 'Not Issued'}
                     </span>
                   </div>
                 </div>
@@ -260,40 +292,58 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
             <div className="mt-4 bg-black/30 border border-white/10 rounded-2xl p-3">
               <div className="flex items-center justify-between text-[10px] text-white/70 font-bold uppercase tracking-wider mb-1">
                 <span>Sanctioned Corporate Corridor</span>
-                <span className="text-amber-300">Executive AC</span>
+                <span className={activePass ? 'text-amber-300' : 'text-gray-400'}>
+                  {activePass ? 'Executive AC' : 'Not Assigned'}
+                </span>
               </div>
               <p className="text-xs font-bold text-white leading-snug">
-                {activePass?.route || 'Chandigarh ISBT 43 -> Mohali Quark City / IT Park'}
+                {activePass?.route || 'No active corridor. Click "Buy Pass" to activate commute route.'}
               </p>
               <div className="mt-2 flex items-center justify-between text-[10px] text-[#bdc2ff] border-t border-white/10 pt-1.5">
-                <span>Valid: {activePass?.validUntil || '1 Month Active (30 Days)'}</span>
-                <span className="text-green-400 font-bold">Govt Verified Fleet</span>
+                <span>Valid: {activePass?.validUntil || 'Inactive'}</span>
+                <span className={activePass ? 'text-green-400 font-bold' : 'text-amber-400 font-bold'}>
+                  {activePass ? 'Govt Verified Fleet' : 'Purchase Required'}
+                </span>
               </div>
             </div>
 
             {/* Dynamic QR Code & Conductor Scan Bar */}
             <div className="mt-4 bg-white rounded-2xl p-3.5 flex items-center justify-between gap-3 text-black">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white border border-gray-300 rounded-lg p-1 flex items-center justify-center shrink-0 shadow-xs">
+                <div className={`w-12 h-12 bg-white border border-gray-300 rounded-lg p-1 flex items-center justify-center shrink-0 shadow-xs ${!activePass ? 'opacity-35' : ''}`}>
                   <svg className="w-full h-full text-black" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm8-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm13-2h3v3h-3v-3zm0 5h3v3h-3v-3zm-5-5h3v3h-3v-3zm0 5h3v3h-3v-3zm5-2h3v2h-3v-2zM5 5h2v2H5V5zm12 0h2v2h-2V5zM5 17h2v2H5v-2z" />
                   </svg>
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></span>
-                    <span className="text-xs font-black text-[#000666]">CORPORATE TOKEN</span>
+                    <span className={`w-2 h-2 rounded-full ${activePass ? 'bg-green-600 animate-pulse' : 'bg-gray-400'}`}></span>
+                    <span className="text-xs font-black text-[#000666]">
+                      {activePass ? 'CORPORATE TOKEN' : 'QR NOT ISSUED'}
+                    </span>
                   </div>
-                  <p className="text-[10px] text-[#767683] mt-0.5">Encrypted PRTC Conductor QR</p>
+                  <p className="text-[10px] text-[#767683] mt-0.5">
+                    {activePass ? 'Encrypted PRTC Conductor QR' : 'Available after pass purchase'}
+                  </p>
                 </div>
               </div>
 
-              <button
-                onClick={() => onOpenPassModal(virtualPassData)}
-                className="px-3 py-1.5 rounded-xl bg-[#000666] text-white font-bold text-xs hover:bg-[#1a237e] transition shadow-xs shrink-0"
-              >
-                Scan / View
-              </button>
+              {activePass ? (
+                <button
+                  onClick={() => onOpenPassModal(virtualPassData)}
+                  className="px-3 py-1.5 rounded-xl bg-[#000666] text-white font-bold text-xs hover:bg-[#1a237e] transition shadow-xs shrink-0 cursor-pointer"
+                >
+                  Scan / View
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsBuyModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-xs shrink-0 flex items-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-xs">add_card</span>
+                  Buy Pass
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -315,65 +365,84 @@ export const CorporateDashboard: React.FC<CorporateDashboardProps> = ({
 
           {/* List of passes */}
           <div className="space-y-3">
-            {corporateTickets.map((ticket) => {
-              const isActive = ticket.status === 'active';
-
-              return (
-                <div
-                  key={ticket.id}
-                  onClick={() =>
-                    onOpenPassModal({
-                      ticketNumber: ticket.ticketNumber,
-                      holderName: ticket.holderName,
-                      title: ticket.title,
-                      route: ticket.route,
-                      validUntil: ticket.validUntil || 'Active',
-                      college: companyName,
-                      avatarUrl: userProfile.avatarUrl,
-                    })
-                  }
-                  className="bg-white hover:bg-[#fbf9f8] border border-[#c6c5d4] rounded-2xl p-4 sm:p-5 flex items-center justify-between cursor-pointer transition shadow-xs group"
+            {corporateTickets.length === 0 ? (
+              <div className="bg-white border border-[#c6c5d4] rounded-3xl p-8 text-center space-y-3 shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#000666] mx-auto flex items-center justify-center">
+                  <span className="material-symbols-outlined text-2xl">confirmation_number</span>
+                </div>
+                <h4 className="font-extrabold text-sm text-[#1b1c1c]">No Corporate Passes Issued Yet</h4>
+                <p className="text-xs text-[#767683] max-w-sm mx-auto">
+                  You currently have no active transit passes. Purchase a corporate monthly or quarterly pass to get instant subsidized fleet transit.
+                </p>
+                <button
+                  onClick={() => setIsBuyModalOpen(true)}
+                  className="px-4 py-2.5 rounded-xl bg-[#000666] text-white text-xs font-extrabold hover:bg-[#1a237e] transition shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${
-                        isActive ? 'bg-[#000666] text-white shadow-xs' : 'bg-[#eae8e7] text-[#767683]'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-2xl">
-                        {isActive ? 'qr_code_2' : 'receipt_long'}
+                  <span className="material-symbols-outlined text-sm">shopping_cart</span>
+                  Purchase Corporate Commute Pass
+                </button>
+              </div>
+            ) : (
+              corporateTickets.map((ticket) => {
+                const isActive = ticket.status === 'active';
+
+                return (
+                  <div
+                    key={ticket.id}
+                    onClick={() =>
+                      onOpenPassModal({
+                        ticketNumber: ticket.ticketNumber,
+                        holderName: ticket.holderName,
+                        title: ticket.title,
+                        route: ticket.route,
+                        validUntil: ticket.validUntil || 'Active',
+                        college: companyName,
+                        avatarUrl: userProfile.avatarUrl,
+                      })
+                    }
+                    className="bg-white hover:bg-[#fbf9f8] border border-[#c6c5d4] rounded-2xl p-4 sm:p-5 flex items-center justify-between cursor-pointer transition shadow-xs group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${
+                          isActive ? 'bg-[#000666] text-white shadow-xs' : 'bg-[#eae8e7] text-[#767683]'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-2xl">
+                          {isActive ? 'qr_code_2' : 'receipt_long'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <div className="font-black text-sm text-[#1b1c1c] group-hover:text-[#000666] flex items-center gap-2">
+                          {ticket.title}
+                          {isActive && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
+                        </div>
+                        <p className="text-xs text-[#454652] mt-0.5">{ticket.route}</p>
+                        <p className="text-[11px] text-[#767683] mt-0.5">
+                          Holder: {ticket.holderName} • {ticket.validUntil}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="font-mono font-black text-sm text-[#1b1c1c]">
+                        ₹{ticket.amount.toFixed(2)}
+                      </span>
+                      <span
+                        className={`block text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 ${
+                          isActive
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-[#eae8e7] text-[#767683]'
+                        }`}
+                      >
+                        {isActive ? 'Active Pass' : 'Expired'}
                       </span>
                     </div>
-
-                    <div>
-                      <div className="font-black text-sm text-[#1b1c1c] group-hover:text-[#000666] flex items-center gap-2">
-                        {ticket.title}
-                        {isActive && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
-                      </div>
-                      <p className="text-xs text-[#454652] mt-0.5">{ticket.route}</p>
-                      <p className="text-[11px] text-[#767683] mt-0.5">
-                        Holder: {ticket.holderName} • {ticket.validUntil}
-                      </p>
-                    </div>
                   </div>
-
-                  <div className="text-right">
-                    <span className="font-mono font-black text-sm text-[#1b1c1c]">
-                      ₹{ticket.amount.toFixed(2)}
-                    </span>
-                    <span
-                      className={`block text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 ${
-                        isActive
-                          ? 'bg-green-100 text-green-800 border border-green-300'
-                          : 'bg-[#eae8e7] text-[#767683]'
-                      }`}
-                    >
-                      {isActive ? 'Active Pass' : 'Expired'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* Corporate Commute Subsidy Benefits Banner */}

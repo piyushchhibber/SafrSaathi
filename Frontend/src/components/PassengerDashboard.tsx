@@ -50,7 +50,28 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
   // Payment Gateway Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentItemData, setPaymentItemData] = useState<PaymentItemDetails | null>(null);
-  const [localTickets, setLocalTickets] = useState<BusTicket[]>(tickets);
+
+  const isDemoPassenger =
+    !userProfile?.name ||
+    userProfile.name.toLowerCase().includes('priya');
+
+  const passengerStorageKey = `prtc_passenger_tickets_${(userProfile?.name || 'demo').toLowerCase().replace(/\s+/g, '_')}`;
+
+  const [localTickets, setLocalTickets] = useState<BusTicket[]>(() => {
+    try {
+      const raw = localStorage.getItem(passengerStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+
+    if (isDemoPassenger) {
+      return tickets && tickets.length > 0 ? tickets : [];
+    }
+    // New passenger starts with clean ticket roster until they buy a ticket or pass
+    return [];
+  });
 
   const selectedRouteObj = PASSENGER_POPULAR_ROUTES[selectedRouteIdx] || PASSENGER_POPULAR_ROUTES[0];
 
@@ -115,7 +136,11 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
       validUntil: 'Active for next 6 Hours',
     };
 
-    setLocalTickets([newTicket, ...localTickets]);
+    const updated = [newTicket, ...localTickets];
+    setLocalTickets(updated);
+    try {
+      localStorage.setItem(passengerStorageKey, JSON.stringify(updated));
+    } catch {}
     confetti({ particleCount: 80, spread: 70 });
     onOpenTicketModal(newTicket);
   };
@@ -319,54 +344,62 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
             </div>
 
             <div className="space-y-3 flex-1">
-              {localTickets.map((ticket) => {
-                const isActive = ticket.status === 'active';
+              {localTickets.length === 0 ? (
+                <div className="bg-[#fbf9f8] border border-dashed border-[#c6c5d4] rounded-2xl p-8 text-center space-y-2">
+                  <span className="material-symbols-outlined text-3xl text-[#767683]">confirmation_number</span>
+                  <h4 className="font-bold text-xs text-[#1b1c1c]">No Active Tickets or Passes</h4>
+                  <p className="text-[11px] text-[#767683]">Book a direct ticket or purchase a 24h pass above to start travelling.</p>
+                </div>
+              ) : (
+                localTickets.map((ticket) => {
+                  const isActive = ticket.status === 'active';
 
-                return (
-                  <div
-                    key={ticket.id}
-                    onClick={() => onOpenTicketModal(ticket)}
-                    className="bg-[#fbf9f8] hover:bg-[#f0eded] border border-[#c6c5d4] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition shadow-2xs group"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition shrink-0 ${
-                          isActive ? 'bg-[#000666] text-white shadow-xs' : 'bg-[#eae8e7] text-[#767683]'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-2xl">
-                          {ticket.type === 'day_pass' ? 'near_me' : 'qr_code_2'}
+                  return (
+                    <div
+                      key={ticket.id}
+                      onClick={() => onOpenTicketModal(ticket)}
+                      className="bg-[#fbf9f8] hover:bg-[#f0eded] border border-[#c6c5d4] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition shadow-2xs group"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div
+                          className={`w-11 h-11 rounded-xl flex items-center justify-center transition shrink-0 ${
+                            isActive ? 'bg-[#000666] text-white shadow-xs' : 'bg-[#eae8e7] text-[#767683]'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-2xl">
+                            {ticket.type === 'day_pass' ? 'near_me' : 'qr_code_2'}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-[#1b1c1c] group-hover:text-[#000666] flex items-center gap-2">
+                            {ticket.title}
+                            {isActive && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
+                          </div>
+                          <div className="text-xs text-[#454652]">{ticket.route}</div>
+                          <div className="text-[11px] text-[#767683] mt-0.5">
+                            {ticket.timestamp} • {ticket.validUntil}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="font-mono font-black text-sm text-[#1b1c1c]">
+                          ₹{ticket.amount.toFixed(2)}
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-block mt-1 ${
+                            isActive
+                              ? 'bg-green-100 text-green-800 border border-green-300'
+                              : 'bg-[#eae8e7] text-[#767683]'
+                          }`}
+                        >
+                          {isActive ? 'Active Token' : 'Expired'}
                         </span>
                       </div>
-                      <div>
-                        <div className="font-bold text-sm text-[#1b1c1c] group-hover:text-[#000666] flex items-center gap-2">
-                          {ticket.title}
-                          {isActive && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
-                        </div>
-                        <div className="text-xs text-[#454652]">{ticket.route}</div>
-                        <div className="text-[11px] text-[#767683] mt-0.5">
-                          {ticket.timestamp} • {ticket.validUntil}
-                        </div>
-                      </div>
                     </div>
-
-                    <div className="text-right shrink-0">
-                      <div className="font-mono font-black text-sm text-[#1b1c1c]">
-                        ₹{ticket.amount.toFixed(2)}
-                      </div>
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-block mt-1 ${
-                          isActive
-                            ? 'bg-green-100 text-green-800 border border-green-300'
-                            : 'bg-[#eae8e7] text-[#767683]'
-                        }`}
-                      >
-                        {isActive ? 'Active Token' : 'Expired'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
