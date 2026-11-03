@@ -91,44 +91,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const [activeAppId, setActiveAppId] = useState<string | null>(null);
 
-  // Always prioritize an active sanctioned/approved pass so students can board buses and show their QR,
-  // followed by an attested application under review, then latest pending application.
-  const isManiProfile = Boolean(
-    userProfile?.name?.toLowerCase().includes('mani') ||
-    userProfile?.email?.toLowerCase().includes('mani')
-  );
-
-  const isPrakashProfile = Boolean(
-    userProfile?.name?.toLowerCase().includes('prakash') ||
-    userProfile?.email?.toLowerCase().includes('prakash')
-  );
-
-  const isDemoProfile = isManiProfile || isPrakashProfile;
-
-  // Demo approved pass is ONLY provided for built-in demo profiles (Mani Ladla / Prakash),
-  // NEVER for new or other student accounts who have not yet submitted an application.
-  const defaultApprovedApp: StudentApplication | undefined = isDemoProfile ? {
-    id: isManiProfile ? 'app-mani-ladla' : 'app-prakash',
-    studentId: userProfile?.id || (isManiProfile ? 'usr-mani-ladla' : 'usr-5337b7bde4b9'),
-    passId: isManiProfile ? 'PRTC-STU-2012' : (userProfile?.passId || 'PRTC-STU-887'),
-    name: userProfile?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash'),
-    rollNumber: userProfile?.rollNo || (isManiProfile ? '869' : '887'),
-    collegeName: userProfile?.college || userProfile?.institution || 'Chandigarh Engineering College-CGC Landran',
-    course: 'B.Tech Computer Science & Engg',
-    semester: 'Semester 4',
-    passType: 'Subsidized Student Concession',
-    route: isManiProfile ? 'Zirakpur Bus Stand -> Landran' : 'Kharar Bus Stand -> CGC Landran Mohali Campus',
-    status: 'approved',
-    passExpiresAt: '2027-04-30',
-    duration: 'Monthly',
-    isPunjabResident: true,
-  } : undefined;
-
+  // Prioritize active approved pass, then college approved, then pending application.
+  // Newly registered users who have not applied have NO pass and NO fake approved status.
   const defaultApp: StudentApplication | undefined =
     studentApps.find((app) => app.status === 'approved') ||
     studentApps.find((app) => app.status === 'college_approved') ||
-    studentApps[0] ||
-    defaultApprovedApp;
+    studentApps[0];
 
   const myApp: StudentApplication | undefined =
     (activeAppId && studentApps.find((a) => a.id === activeAppId)) || defaultApp;
@@ -144,22 +112,19 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const isApproved = Boolean(myApp && myApp.status === 'approved');
 
-  const studentName = userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : isPrakashProfile ? 'Prakash' : 'Student Commuter');
+  const studentName = userProfile?.name || myApp?.name || 'Student Commuter';
   const collegeLabel =
-    userProfile?.college || userProfile?.institution || myApp?.collegeName || (isDemoProfile ? 'Chandigarh Engineering College-CGC Landran' : 'Punjab Technical Institution');
-  const rollLabel = userProfile?.rollNo || myApp?.rollNumber || (isManiProfile ? '869' : isPrakashProfile ? '887' : '—');
+    userProfile?.college || userProfile?.institution || myApp?.collegeName || 'Punjab Technical Institution';
+  const rollLabel = userProfile?.rollNo || myApp?.rollNumber || '—';
   const passIdLabel = isApproved
-    ? (isManiProfile
-        ? 'PRTC-STU-2012'
-        : ((myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
-           (userProfile?.passId && !userProfile.passId.toLowerCase().startsWith('usr-') ? userProfile.passId : undefined) ||
-           myApp?.id ||
-           'PRTC-STU-887'))
+    ? (myApp?.passId ||
+       (myApp?.studentId && !myApp.studentId.startsWith('usr-') ? myApp.studentId : undefined) ||
+       (userProfile?.passId && !userProfile.passId.toLowerCase().startsWith('usr-') ? userProfile.passId : undefined) ||
+       myApp?.id ||
+       'PRTC-STU-887')
     : 'Not issued';
   const validityLabel = isApproved
-    ? (isManiProfile
-        ? '1 Month (Monthly Concession Valid)'
-        : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)'))
+    ? ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)')
     : 'Not issued';
 
 
@@ -261,16 +226,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     name: studentName,
     holderName: studentName,
     title: `${myApp?.passType || 'Student'} Concession Pass`,
-    route: isManiProfile ? 'Zirakpur Bus Stand -> Landran' : (myApp?.route || (isDemoProfile ? 'Kharar Bus Stand -> CGC Landran Mohali Campus' : 'No route sanctioned yet')),
+    route: myApp?.route || 'No route sanctioned yet',
     college: collegeLabel,
     validUntil: validityLabel,
     rollNo: rollLabel,
     avatarUrl: uiAvatar,
     aadhaarNo: maskAadhaar(userProfile?.aadhaarNumber || myApp?.aadhaarNumber),
-    applicationId: isManiProfile ? 'app-179337695169' : myApp?.id,
+    applicationId: myApp?.id,
     qrCodeDataUrl: qrCodeDataUrl,
     expiresAt: qrExpiresAt || myApp?.passExpiresAt || (isApproved ? '2027-04-30' : ''),
-    duration: isManiProfile ? 'Monthly' : myApp?.duration,
+    duration: myApp?.duration || 'Monthly',
   };
 
   // Persist student avatar in local storage so Conductor Scanner matches the student account photo exactly

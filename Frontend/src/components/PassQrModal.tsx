@@ -217,7 +217,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     const displayNameVal = passData.name || passData.holderName || 'Transit Commuter';
     const displayPassIdVal = passData.passId || passData.ticketNumber || 'PRTC-PASS-8891';
     const displayRouteVal = passData.route || 'All Punjab Regional Transit Corridors';
-    const displayRoll = (passData as any).rollNo || (passData as any).rollNumber || (displayNameVal.toLowerCase().includes('mani') ? '869' : '887');
+    const displayRoll = (passData as any).rollNo || (passData as any).rollNumber || '—';
     const displayCollege = passData.college || 'Chandigarh Engineering College-CGC Landran';
     const displayPassType = passData.passType || 'Subsidized Student Concession';
     const displayExpires = passData.expiresAt || new Date(Date.now() + 30 * 86400 * 1000).toISOString().split('T')[0];
@@ -432,7 +432,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
                   <span className="material-symbols-outlined text-xs text-emerald-600">verified</span>
                 </div>
                 <p className="text-[11px] text-[#454652] font-semibold">
-                  Roll: {(passData as any).rollNo || (displayName.toLowerCase().includes('mani') ? '869' : '887')} • {displayPassId}
+                  Roll: {(passData as any).rollNo || (passData as any).rollNumber || '—'} • {displayPassId}
                 </p>
                 <p className="text-[10px] text-emerald-800 font-bold">● PRTC Verified Beneficiary</p>
               </div>
