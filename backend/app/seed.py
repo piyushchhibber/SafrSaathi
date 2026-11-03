@@ -121,7 +121,7 @@ def run():
                 phone='+91 98150 99882',
                 password_hash=hash_password('demo1234'),
                 role_type='college_admin',
-                avatar_url='',
+                avatar_url='https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
                 institution='Chandigarh Engineering College-CGC Landran',
                 college_id='ccet',
                 college_name='Chandigarh Engineering College-CGC Landran',
@@ -289,6 +289,90 @@ def run():
             vu.password_hash = hash_password('demo1234')
             vu.role_type = 'student'
             print(f"[SEED] Vishwas user repaired: id={vu.id}, email={vu.email}")
+
+        # Ensure Mani Ladla account and approved application exist
+        mani_user = db.query(User).filter(
+            (User.email == 'mani.ladla@gmail.com') |
+            (User.name.ilike('%mani ladla%')) |
+            (User.pass_id == 'PRTC-STU-2012')
+        ).first()
+        if not mani_user:
+            mani_user = User(
+                id='usr-mani-ladla',
+                pass_id='PRTC-STU-2012',
+                name='Mani Ladla',
+                email='mani.ladla@gmail.com',
+                phone='+91 98765 43210',
+                password_hash=hash_password('demo1234'),
+                role_type='student',
+                college_id='ccet',
+                college='Chandigarh Engineering College-CGC Landran',
+                institution='Chandigarh Engineering College-CGC Landran',
+                roll_no='869',
+                avatar_url='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+                is_punjab_resident=True,
+                permanent_address='Zirakpur, Punjab',
+                aadhaar_number='XXXX-XXXX-9999',
+            )
+            db.add(mani_user)
+            print("[SEED] Mani Ladla user created!")
+        else:
+            mani_user.avatar_url = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
+            mani_user.pass_id = 'PRTC-STU-2012'
+            mani_user.roll_no = '869'
+            mani_user.password_hash = hash_password('demo1234')
+
+        mani_app = db.query(StudentApplication).filter(
+            (StudentApplication.name.ilike('%mani ladla%')) |
+            (StudentApplication.student_id == 'usr-mani-ladla') |
+            (StudentApplication.student_id == 'PRTC-STU-2012') |
+            (StudentApplication.roll_number == '869')
+        ).first()
+
+        if not mani_app:
+            mani_app = StudentApplication(
+                id='app-mani-ladla',
+                student_id='usr-mani-ladla',
+                name='Mani Ladla',
+                initials='M',
+                father_name='S. Ladla',
+                college_id='ccet',
+                college_name='Chandigarh Engineering College-CGC Landran',
+                roll_number='869',
+                course='B.Tech Computer Science & Engg',
+                semester='Semester 4',
+                pass_type='Subsidized Student Concession',
+                route='Zirakpur Bus Stand -> Landran',
+                distance_km=18,
+                duration='Monthly',
+                status='approved',
+                submitted_date='28 Oct 2026',
+                college_verified_by='Dr. D. Sharma (Dean Academics)',
+                college_verified_date='29 Oct 2026',
+                college_stamp_id='CCET-STAMP-991',
+                college_stamp_name='Official Seal of CGC Landran',
+                prtc_verified_by='S. Gurmukh Singh (PRTC Depot Officer)',
+                prtc_verified_date='30 Oct 2026',
+                prtc_admin_id='PRTC-PAT-HQ-091',
+                aadhaar_number='XXXX-XXXX-9999',
+                aadhaar_address='Zirakpur, Punjab',
+                is_punjab_resident=True,
+                original_fare=900,
+                subsidized_amount_paid=225,
+                pass_issued_at=now_dt,
+                pass_expires_at=now_dt + timedelta(days=30),
+            )
+            db.add(mani_app)
+            print("[SEED] Mani Ladla approved application created!")
+        else:
+            mani_app.status = 'approved'
+            mani_app.route = 'Zirakpur Bus Stand -> Landran'
+            mani_app.roll_number = '869'
+            mani_app.college_name = 'Chandigarh Engineering College-CGC Landran'
+            if not mani_app.pass_issued_at:
+                mani_app.pass_issued_at = now_dt
+            if not mani_app.pass_expires_at:
+                mani_app.pass_expires_at = now_dt + timedelta(days=30)
 
         db.commit()
     finally: db.close()

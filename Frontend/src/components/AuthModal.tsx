@@ -1242,11 +1242,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             </button>
                             <button
                               type="button"
-                              onClick={() => triggerDevGoogleAuth('prakash@gmail.com', 'Prakash')}
+                              onClick={() => triggerDevGoogleAuth('prakash@gmail.com', 'Prakash', 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80')}
                               className="p-2 text-left bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition font-medium"
                             >
-                              <div className="font-bold text-[#1b1c1c]">Existing Student (Prakash)</div>
-                              <div className="text-[10px] text-[#454652]">prakash@gmail.com (Direct Login)</div>
+                              <div className="font-bold text-[#1b1c1c]">Prakash (CGC Landran)</div>
+                              <div className="text-[10px] text-[#454652]">prakash@gmail.com (#887)</div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => triggerDevGoogleAuth('mani.ladla@gmail.com', 'Mani Ladla', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80')}
+                              className="p-2 text-left bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-300 transition font-medium"
+                            >
+                              <div className="font-bold text-emerald-900">Mani Ladla (Zirakpur)</div>
+                              <div className="text-[10px] text-emerald-700">mani.ladla@gmail.com (#869)</div>
                             </button>
                           </div>
 

@@ -161,6 +161,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     userProfile?.email?.toLowerCase().includes('mani')
   );
 
+  const studentName = userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash');
   const collegeLabel =
     userProfile?.college || userProfile?.institution || myApp?.collegeName || 'Chandigarh Engineering College-CGC Landran';
   const rollLabel = isManiProfile ? '869' : (userProfile?.rollNo || myApp?.rollNumber || '887');
@@ -176,33 +177,49 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     ? '1 Month (Monthly Concession Valid)'
     : ((myApp?.duration && VALIDITY_LABEL[myApp.duration]) || '1 Month (30 Days)');
 
+  const getDistinctAvatar = (name: string, fallback?: string): string => {
+    if (fallback && fallback.trim()) return fallback;
+    const lower = (name || '').toLowerCase();
+    if (lower.includes('mani')) {
+      return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('prakash')) {
+      return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('navjot')) {
+      return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('gurleen')) {
+      return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
+    }
+    if (lower.includes('parteek')) {
+      return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+  };
+
+  const studentAvatar = getDistinctAvatar(studentName, userProfile?.avatarUrl);
+
   const virtualPassData = {
     ticketNumber: passIdLabel,
-    name: userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash'),
-    holderName: userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash'),
+    name: studentName,
+    holderName: studentName,
     title: `${myApp?.passType || 'Student'} Concession Pass`,
     route: isManiProfile ? 'Zirakpur Bus Stand -> Landran' : (myApp?.route || 'Kharar Bus Stand -> CGC Landran Mohali Campus'),
     college: collegeLabel,
     validUntil: validityLabel,
     rollNo: rollLabel,
-    avatarUrl: userProfile?.avatarUrl,
+    avatarUrl: studentAvatar,
     aadhaarNo: maskAadhaar(userProfile?.aadhaarNumber || myApp?.aadhaarNumber),
     applicationId: isManiProfile ? 'app-179337695169' : myApp?.id,
-    qrCodeDataUrl: isManiProfile ? null : qrCodeDataUrl,
-    expiresAt: qrExpiresAt || myApp?.passExpiresAt,
+    qrCodeDataUrl: null, // Ensure PassQrModal generates the ultra-fast crisp local QR
+    expiresAt: qrExpiresAt || myApp?.passExpiresAt || '2027-04-30',
     duration: isManiProfile ? 'Monthly' : myApp?.duration,
   };
 
-  const Avatar: React.FC<{ className: string }> = ({ className }) =>
-    userProfile?.avatarUrl ? (
-      <img src={userProfile.avatarUrl} alt={userProfile.name} className={className} />
-    ) : (
-      <div
-        className={`${className} bg-[#000666]/10 text-[#000666] flex items-center justify-center font-black`}
-      >
-        {getInitials(userProfile?.name)}
-      </div>
-    );
+  const Avatar: React.FC<{ className: string }> = ({ className }) => (
+    <img src={studentAvatar} alt={studentName} className={className} />
+  );
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in">

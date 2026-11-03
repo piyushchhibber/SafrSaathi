@@ -111,29 +111,38 @@ export const api = {
       }
     } catch {
       // Server unreachable (e.g. mobile scanning on Vercel without local server access).
-      // Seamlessly fallback to offline cryptographic & registry verification.
+      // Seamlessly fallback to offline cryptographic & direct token verification.
     }
 
-    // 2. Decode portable cryptographically encoded JWT token if present
-    const rawClean = token.replace(/^SAFRSAATHI:/, '').trim();
-    let jwtPayload: any = null;
-    if (rawClean.includes('.')) {
-      const parts = rawClean.split('.');
+    const raw = (token || '').trim();
+    const clean = raw.replace(/^SAFRSAATHI:/i, '').trim();
+
+    // 2. Decode payload: check Compact JSON first, then JWT base64 claims
+    let parsedPayload: any = null;
+
+    if ((clean.startsWith('{') && clean.endsWith('}')) || (clean.startsWith('{"') && clean.includes('}'))) {
+      try {
+        parsedPayload = JSON.parse(clean);
+      } catch {}
+    }
+
+    if (!parsedPayload && clean.includes('.')) {
+      const parts = clean.split('.');
       if (parts.length >= 2) {
         try {
           const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
           const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
           const jsonStr = decodeURIComponent(escape(atob(b64 + pad)));
-          jwtPayload = JSON.parse(jsonStr);
+          parsedPayload = JSON.parse(jsonStr);
         } catch {
           try {
-            jwtPayload = JSON.parse(atob(parts[1]));
+            parsedPayload = JSON.parse(atob(parts[1]));
           } catch {}
         }
       }
     }
 
-    // 3. Built-in registry of known demo and local student passes
+    // 3. Known pass registry with distinct photos and accurate data
     const localAppsRaw = localStorage.getItem('prtc_student_applications_v2');
     let localApps: any[] = [];
     try {
@@ -143,8 +152,8 @@ export const api = {
     const allKnownApps = [
       ...localApps,
       {
-        id: 'app-179337695169',
-        aliasIds: ['app-179337695169', 'app-mani', 'app-mani-ladla', 'prtc-stu-2012', '869'],
+        id: 'app-mani-ladla',
+        aliasIds: ['app-179337695169', 'app-mani', 'app-mani-ladla', 'prtc-stu-2012', '869', 'mani'],
         studentId: 'usr-mani-ladla',
         passId: 'PRTC-STU-2012',
         name: 'Mani Ladla',
@@ -159,8 +168,8 @@ export const api = {
         passExpiresAt: '2027-04-30',
       },
       {
-        id: 'app-1792877907263',
-        aliasIds: ['app-1792877907263', 'app-prakash', 'prtc-stu-887', '887'],
+        id: 'app-prakash',
+        aliasIds: ['app-1792877907263', 'app-prakash', 'prtc-stu-887', '887', 'prakash'],
         studentId: 'usr-5337b7bde4b9',
         passId: 'PRTC-STU-887',
         name: 'Prakash',
@@ -176,7 +185,7 @@ export const api = {
       },
       {
         id: 'app-101',
-        aliasIds: ['app-101', 'stu-2024-8841', '102203418', 'navjot'],
+        aliasIds: ['app-101', 'stu-2024-8841', '102203418', 'navjot', 'usr-student-01'],
         studentId: 'usr-student-01',
         passId: 'STU-2024-8841',
         name: 'Navjot Singh Dhillon',
@@ -187,12 +196,12 @@ export const api = {
         passType: 'Subsidized Student Concession',
         route: 'Patiala Bus Stand -> Nabha Road -> Thapar Campus',
         status: 'approved',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
         passExpiresAt: '2027-04-30',
       },
       {
         id: 'app-102',
-        aliasIds: ['app-102', 'stu-2024-5519', '21104019', 'gurleen'],
+        aliasIds: ['app-102', 'stu-2024-5519', '21104019', 'gurleen', 'usr-student-02'],
         studentId: 'usr-student-02',
         passId: 'STU-2024-5519',
         name: 'Gurleen Kaur Sandhu',
@@ -206,74 +215,84 @@ export const api = {
         avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
         passExpiresAt: '2027-04-30',
       },
+      {
+        id: 'app-parteek',
+        aliasIds: ['app-parteek', 'prtc-stu-1023', '1023', 'parteek'],
+        studentId: 'usr-parteek',
+        passId: 'PRTC-STU-1023',
+        name: 'Parteek Marve',
+        rollNumber: '1023',
+        collegeName: 'Chandigarh Engineering College-CGC Landran',
+        course: 'B.Tech Computer Science & Engg',
+        semester: 'Semester 4',
+        passType: 'Subsidized Student Concession',
+        route: 'Kharar Bus Stand -> Landran',
+        status: 'approved',
+        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+        passExpiresAt: '2027-04-30',
+      },
     ];
 
-    const sub = (jwtPayload?.sub || '').toLowerCase();
-    const tokenLower = rawClean.toLowerCase();
+    const getDistinctAvatar = (name: string, fallback?: string): string => {
+      if (fallback && fallback.trim()) return fallback;
+      const lower = (name || '').toLowerCase();
+      if (lower.includes('mani')) {
+        return 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
+      }
+      if (lower.includes('prakash')) {
+        return 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+      }
+      if (lower.includes('navjot')) {
+        return 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80';
+      }
+      if (lower.includes('gurleen')) {
+        return 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80';
+      }
+      if (lower.includes('parteek')) {
+        return 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80';
+      }
+      return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+    };
 
-    // Specific identification
-    const isMani =
-      sub.includes('179337695169') ||
-      sub.includes('1793') ||
-      sub.includes('2012') ||
-      sub.includes('mani') ||
-      tokenLower.includes('2012') ||
-      tokenLower.includes('869') ||
-      tokenLower.includes('mani') ||
-      tokenLower.includes('zirakpur');
+    // 4. Resolve passenger details from parsed payload or matched registry
+    const tokenQuery = clean.toLowerCase();
 
-    const isNavjot =
-      sub.includes('101') ||
-      sub.includes('8841') ||
-      sub.includes('navjot') ||
-      tokenLower.includes('8841') ||
-      tokenLower.includes('101');
-
-    const isGurleen =
-      sub.includes('102') ||
-      sub.includes('5519') ||
-      sub.includes('gurleen') ||
-      tokenLower.includes('5519') ||
-      tokenLower.includes('102');
-
-    // 4. Match against decoded JWT payload or registry
     let match = allKnownApps.find((a: any) => {
-      if (isMani && (a.name === 'Mani Ladla' || a.rollNumber === '869' || a.id === 'app-179337695169')) return true;
-      if (isNavjot && a.id === 'app-101') return true;
-      if (isGurleen && a.id === 'app-102') return true;
-      if (jwtPayload?.sub && (a.id?.toLowerCase() === sub || (a.aliasIds && a.aliasIds.includes(sub)))) return true;
-      if (jwtPayload?.name && a.name?.toLowerCase() === jwtPayload.name.toLowerCase()) return true;
-      if (a.id?.toLowerCase() === tokenLower) return true;
-      if (a.passId?.toLowerCase() === tokenLower) return true;
-      if (a.rollNumber?.toLowerCase() === tokenLower) return true;
-      if (a.aliasIds && a.aliasIds.some((id: string) => tokenLower.includes(id))) return true;
+      if (parsedPayload?.id && (a.id?.toLowerCase() === parsedPayload.id.toLowerCase() || a.passId?.toLowerCase() === parsedPayload.id.toLowerCase())) return true;
+      if (parsedPayload?.n && a.name?.toLowerCase() === parsedPayload.n.toLowerCase()) return true;
+      if (parsedPayload?.name && a.name?.toLowerCase() === parsedPayload.name.toLowerCase()) return true;
+      if (parsedPayload?.sub && (a.id?.toLowerCase() === parsedPayload.sub.toLowerCase() || a.studentId?.toLowerCase() === parsedPayload.sub.toLowerCase())) return true;
+      if (a.passId?.toLowerCase() === tokenQuery) return true;
+      if (a.rollNumber?.toLowerCase() === tokenQuery) return true;
+      if (a.id?.toLowerCase() === tokenQuery) return true;
+      if (a.studentId?.toLowerCase() === tokenQuery) return true;
+      if (a.aliasIds && a.aliasIds.some((id: string) => tokenQuery === id.toLowerCase() || tokenQuery.includes(id.toLowerCase()))) return true;
+      if (a.name?.toLowerCase() === tokenQuery) return true;
       return false;
     });
 
-    if (!match && !isMani) {
-      match = allKnownApps.find((a: any) => a.name === 'Prakash') || allKnownApps[1];
-    }
-
-    const holderName = jwtPayload?.name || (isMani ? 'Mani Ladla' : match?.name || 'Prakash');
-    const rollNumber = jwtPayload?.rollNumber || (isMani ? '869' : match?.rollNumber || '887');
-    const passRoute = jwtPayload?.route || (isMani ? 'Zirakpur Bus Stand -> Landran' : match?.route || 'Kharar Bus Stand -> CGC Landran Mohali Campus');
-    const passType = jwtPayload?.passType || match?.passType || 'Subsidized Student Concession';
-    const collegeName = jwtPayload?.collegeName || match?.collegeName || 'Chandigarh Engineering College-CGC Landran';
-    const course = jwtPayload?.course || match?.course || 'B.Tech Computer Science & Engg';
-    const semester = jwtPayload?.semester || match?.semester || 'Semester 4';
-    const passId = jwtPayload?.passId || (isMani ? 'PRTC-STU-2012' : match?.passId || 'PRTC-STU-887');
-    const avatarUrl =
-      jwtPayload?.avatarUrl ||
-      (isMani
-        ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
-        : match?.avatarUrl || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80');
+    const holderName = parsedPayload?.n || parsedPayload?.name || parsedPayload?.holderName || match?.name || (tokenQuery.includes('mani') ? 'Mani Ladla' : tokenQuery.includes('prakash') ? 'Prakash' : tokenQuery.includes('navjot') ? 'Navjot Singh Dhillon' : tokenQuery.includes('gurleen') ? 'Gurleen Kaur Sandhu' : 'Verified Student');
+    const rollNumber = parsedPayload?.r || parsedPayload?.rollNumber || parsedPayload?.rollNo || match?.rollNumber || (tokenQuery.includes('mani') ? '869' : tokenQuery.includes('prakash') ? '887' : '887');
+    const passRoute = parsedPayload?.rt || parsedPayload?.route || match?.route || (tokenQuery.includes('mani') ? 'Zirakpur Bus Stand -> Landran' : 'Kharar Bus Stand -> CGC Landran Mohali Campus');
+    const passType = parsedPayload?.pt || parsedPayload?.passType || match?.passType || 'Subsidized Student Concession';
+    const collegeName = parsedPayload?.c || parsedPayload?.collegeName || parsedPayload?.college || match?.collegeName || 'Chandigarh Engineering College-CGC Landran';
+    const course = parsedPayload?.crs || parsedPayload?.course || match?.course || 'B.Tech Computer Science & Engg';
+    const semester = parsedPayload?.sem || parsedPayload?.semester || match?.semester || 'Semester 4';
+    const passId = parsedPayload?.id || parsedPayload?.passId || match?.passId || (tokenQuery.includes('mani') ? 'PRTC-STU-2012' : `PRTC-STU-${rollNumber}`);
+    const expiresAt = parsedPayload?.exp || parsedPayload?.expiresAt || match?.passExpiresAt || '2027-04-30';
+    const avatarUrl = getDistinctAvatar(holderName, parsedPayload?.img || parsedPayload?.avatarUrl || match?.avatarUrl);
 
     // Route fuzzy check
     const passStops = passRoute.split(/->|→/).map((s: string) => s.trim().toLowerCase());
     const tripStops = (tripRoute || '').split(/->|→/).map((s: string) => s.trim().toLowerCase());
+
+    const passKeywords = passRoute.replace(/[^a-zA-Z0-9]/g, ' ').toLowerCase().split(/\s+/).filter((w: string) => w.length > 3 && !['stand', 'campus', 'road', 'isbt', 'stop', 'bus'].includes(w));
+    const tripKeywords = (tripRoute || '').replace(/[^a-zA-Z0-9]/g, ' ').toLowerCase().split(/\s+/).filter((w: string) => w.length > 3 && !['stand', 'campus', 'road', 'isbt', 'stop', 'bus'].includes(w));
+
     const routeValid =
       !tripRoute ||
       tripRoute.toLowerCase().includes('all') ||
+      passKeywords.some((pk: string) => tripKeywords.includes(pk)) ||
       tripStops.some((ts: string) => passStops.some((ps: string) => ps.includes(ts) || ts.includes(ps)));
 
     return {
@@ -288,7 +307,7 @@ export const api = {
       collegeName,
       course,
       semester,
-      expiresAt: jwtPayload?.expiresAt || match?.passExpiresAt || '2027-04-30',
+      expiresAt,
       routeValid,
       routeMessage: routeValid
         ? 'Pass route matches the active trip'
@@ -296,7 +315,7 @@ export const api = {
     };
   },
 
-  listTickets: () => request<BusTicket[]>('/tickets'),
+    listTickets: () => request<BusTicket[]>('/tickets'),
   createTicket: (ticket: BusTicket, ownerPassId?: string) =>
     request<BusTicket>('/tickets', {
       method: 'POST',

@@ -275,7 +275,7 @@ export const defaultStudentProfile: UserProfile = {
   passId: 'PRTC-STU-9942',
   email: 'navjot.dhillon@thapar.edu',
   phone: '+91 98145 67210',
-  avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
+  avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
   roleType: 'student',
   institution: 'Thapar Institute of Engg. & Technology',
   roleTitle: 'B.Tech Student • Subsidized Concession Holder',

@@ -121,12 +121,21 @@ export const ConductorDashboard: React.FC<{ userProfile: UserProfile }> = ({ use
       try {
         const scanner = new Html5Qrcode('conductor-qr-reader');
         scannerRef.current = scanner;
-        const config = { fps: 10, qrbox: { width: 240, height: 240 } };
+        const config = {
+          fps: 25,
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            return {
+              width: Math.max(220, Math.floor(minEdge * 0.8)),
+              height: Math.max(220, Math.floor(minEdge * 0.8)),
+            };
+          },
+        };
         const onScan = (text: string) => {
-          stopCamera().then(() => {
-            setPayload(text);
-            verify(text);
-          });
+          // Trigger verification immediately without waiting for camera release
+          setPayload(text);
+          verify(text);
+          void stopCamera();
         };
         try {
           await scanner.start({ facingMode: 'environment' }, config, onScan, () => {});
