@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../utils/api';
+import { WalletInfo } from '../types';
 import { useTranslation } from 'react-i18next';
 import { StudentApplication, UserProfile, College } from '../types';
 import confetti from 'canvas-confetti';
@@ -38,7 +40,20 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
   const [feeReceiptNo, setFeeReceiptNo] = useState('TIET-REC-2026-904');
 
   // Step 4: Payment
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'netbanking'>('upi');
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'netbanking' | 'wallet'>('upi');
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setWalletLoading(true);
+      api.getWallet()
+        .then((w) => setWalletInfo(w))
+        .catch(() => {})
+        .finally(() => setWalletLoading(false));
+    }
+  }, [isOpen]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isOpen) return null;
@@ -69,8 +84,35 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
     }
   };
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
+    setWalletError(null);
+    if (paymentMethod === 'wallet') {
+      const balance = walletInfo?.balance ?? 0;
+      if (balance < studentPayable) {
+        setWalletError(`Insufficient wallet balance. You have ₹${balance.toFixed(2)}, but ₹${studentPayable}.00 is required.`);
+        return;
+      }
+    }
+
     setIsProcessing(true);
+
+    if (paymentMethod === 'wallet') {
+      try {
+        const payRes = await api.payFromWallet(
+          studentPayable,
+          `Student Pass Concession Fee (${passDuration}) - ${collegeName || 'PRTC'}`,
+          userProfile?.passId || userProfile?.rollNo
+        );
+        if (payRes?.balance !== undefined) {
+          setWalletInfo((prev) => (prev ? { ...prev, balance: payRes.balance } : prev));
+        }
+      } catch (err: any) {
+        setIsProcessing(false);
+        setWalletError(err?.message || 'Wallet payment failed. Please try again or choose another payment method.');
+        return;
+      }
+    }
+
     setTimeout(() => {
       setIsProcessing(false);
       const studentFullName = userProfile?.name || 'Navjot Singh Dhillon';
@@ -527,6 +569,16 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
 
                 {[
                   {
+                    id: 'wallet',
+                    name: 'SafrSaathi Wallet',
+                    desc: walletLoading
+                      ? 'Checking balance...'
+                      : `Available Balance: ₹${(walletInfo?.balance ?? 0).toFixed(2)}${(walletInfo?.balance ?? 0) < studentPayable ? ` • Need ₹${(studentPayable - (walletInfo?.balance ?? 0)).toFixed(2)} more` : ' • Instant 1-Tap Deduction'}`,
+                    icon: 'account_balance_wallet',
+                    badge: (walletInfo?.balance ?? 0) >= studentPayable ? 'INSTANT' : 'LOW BALANCE',
+                    isWallet: true,
+                  },
+                  {
                     id: 'upi',
                     name: 'UPI / QR / Google Pay / PhonePe / Paytm',
                     desc: 'Zero transaction surcharge • Instant automated reconciliation',
@@ -544,32 +596,74 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
                     desc: 'Direct institutional internet banking',
                     icon: 'account_balance',
                   },
-                ].map((method) => (
-                  <label
-                    key={method.id}
-                    onClick={() => setPaymentMethod(method.id as any)}
-                    className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${
-                      paymentMethod === method.id
-                        ? 'border-[#000666] bg-blue-50/50'
-                        : 'border-[#c6c5d4] bg-white hover:border-[#000666]/40'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      checked={paymentMethod === method.id}
-                      onChange={() => setPaymentMethod(method.id as any)}
-                      className="text-[#000666] focus:ring-[#000666]"
-                    />
-                    <div className="w-8 h-8 rounded-lg bg-white border border-[#c6c5d4] flex items-center justify-center text-[#000666]">
-                      <span className="material-symbols-outlined text-lg">{method.icon}</span>
+                ].map((method) => {
+                  const isWallet = method.id === 'wallet';
+                  const isInsufficient = isWallet && (walletInfo?.balance ?? 0) < studentPayable;
+
+                  return (
+                    <label
+                      key={method.id}
+                      onClick={() => setPaymentMethod(method.id as any)}
+                      className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${
+                        paymentMethod === method.id
+                          ? isWallet
+                            ? 'border-amber-500 bg-amber-50/50'
+                            : 'border-[#000666] bg-blue-50/50'
+                          : 'border-[#c6c5d4] bg-white hover:border-[#000666]/40'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        checked={paymentMethod === method.id}
+                        onChange={() => setPaymentMethod(method.id as any)}
+                        className="text-[#000666] focus:ring-[#000666]"
+                      />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        isWallet
+                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          : 'bg-white border border-[#c6c5d4] text-[#000666]'
+                      }`}>
+                        <span className="material-symbols-outlined text-lg">{method.icon}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-[#1b1c1c]">{method.name}</p>
+                          {method.badge && (
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                              (walletInfo?.balance ?? 0) >= studentPayable
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : 'bg-amber-100 text-amber-900 border border-amber-300'
+                            }`}>
+                              {method.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-[11px] ${isInsufficient ? 'text-amber-800 font-semibold' : 'text-[#767683]'}`}>
+                          {method.desc}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })}
+
+                {paymentMethod === 'wallet' && (walletInfo?.balance ?? 0) < studentPayable && (
+                  <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base text-amber-700">warning</span>
+                    <div>
+                      <p className="font-bold">Insufficient Wallet Balance</p>
+                      <p className="text-[11px]">
+                        You need ₹{(studentPayable - (walletInfo?.balance ?? 0)).toFixed(2)} more. Please top up your wallet or select UPI/Card.
+                      </p>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-[#1b1c1c]">{method.name}</p>
-                      <p className="text-[11px] text-[#767683]">{method.desc}</p>
-                    </div>
-                  </label>
-                ))}
+                  </div>
+                )}
+
+                {walletError && (
+                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold">
+                    {walletError}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -606,8 +700,8 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
           ) : (
             <button
               onClick={handleFinalSubmit}
-              disabled={isProcessing}
-              className="px-6 py-2.5 rounded-xl bg-[#138808] hover:bg-[#0f6806] text-white text-xs font-extrabold transition shadow-md flex items-center gap-2"
+              disabled={isProcessing || (paymentMethod === 'wallet' && (walletInfo?.balance ?? 0) < studentPayable)}
+              className="px-6 py-2.5 rounded-xl bg-[#138808] hover:bg-[#0f6806] disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-xs font-extrabold transition shadow-md flex items-center gap-2"
             >
               {isProcessing ? (
                 <>
@@ -617,7 +711,9 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
               ) : (
                 <>
                   <span className="material-symbols-outlined text-sm">payments</span>
-                  Pay ₹{studentPayable} & Apply for Pass
+                  {paymentMethod === 'wallet' && (walletInfo?.balance ?? 0) < studentPayable
+                    ? 'Insufficient Wallet Balance'
+                    : `Pay ₹${studentPayable} & Apply for Pass`}
                 </>
               )}
             </button>
