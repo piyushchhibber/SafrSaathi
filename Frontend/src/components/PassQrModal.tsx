@@ -108,12 +108,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
       }
     }
 
-    // A student application must receive its expiry from the server.  Starting
-    // a browser-only countdown here would make an approved pass appear renewed
-    // after a reload if the QR response is still loading.
-    // Immediate fallback countdown if expiresAt not provided yet
-    const baseSecs = getInitialSeconds();
-    return baseSecs;
+    // Immediate fallback countdown from passIdentifier or base seconds
 
     const passIdentifier = passData?.ticketNumber || passData?.passId || passData?.applicationId;
     if (passIdentifier) {

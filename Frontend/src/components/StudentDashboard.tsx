@@ -85,6 +85,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [qrExpiresAt, setQrExpiresAt] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
 
+  const isApproved = myApp?.status === 'approved';
+
   const isManiProfile = Boolean(
     userProfile?.name?.toLowerCase().includes('mani') ||
     userProfile?.email?.toLowerCase().includes('mani')
@@ -128,8 +130,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   const studentAvatar = getDistinctAvatar(studentName, userProfile?.avatarUrl);
-
-  const isApproved = myApp?.status === 'approved';
 
   // Fetch or generate the signed QR code once the pass is fully approved
   useEffect(() => {
