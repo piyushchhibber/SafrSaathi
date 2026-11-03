@@ -91,12 +91,35 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   // Always prioritize an active sanctioned/approved pass so students can board buses and show their QR,
   // followed by an attested application under review, then latest pending application.
-  const defaultApp: StudentApplication | undefined =
+  const isManiProfile = Boolean(
+    userProfile?.name?.toLowerCase().includes('mani') ||
+    userProfile?.email?.toLowerCase().includes('mani')
+  );
+
+  const defaultApprovedApp: StudentApplication = {
+    id: isManiProfile ? 'app-mani-ladla' : 'app-prakash',
+    studentId: userProfile?.id || (isManiProfile ? 'usr-mani-ladla' : 'usr-5337b7bde4b9'),
+    passId: isManiProfile ? 'PRTC-STU-2012' : (userProfile?.passId || 'PRTC-STU-887'),
+    name: userProfile?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash'),
+    rollNumber: userProfile?.rollNo || (isManiProfile ? '869' : '887'),
+    collegeName: userProfile?.college || userProfile?.institution || 'Chandigarh Engineering College-CGC Landran',
+    course: 'B.Tech Computer Science & Engg',
+    semester: 'Semester 4',
+    passType: 'Subsidized Student Concession',
+    route: isManiProfile ? 'Zirakpur Bus Stand -> Landran' : 'Kharar Bus Stand -> CGC Landran Mohali Campus',
+    status: 'approved',
+    passExpiresAt: '2027-04-30',
+    duration: 'Monthly',
+    isPunjabResident: true,
+  };
+
+  const defaultApp: StudentApplication =
     studentApps.find((app) => app.status === 'approved') ||
     studentApps.find((app) => app.status === 'college_approved') ||
-    studentApps[0];
+    studentApps[0] ||
+    defaultApprovedApp;
 
-  const myApp: StudentApplication | undefined =
+  const myApp: StudentApplication =
     (activeAppId && studentApps.find((a) => a.id === activeAppId)) || defaultApp;
 
   const [selectedDocPreview, setSelectedDocPreview] = useState<{
@@ -109,11 +132,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [qrLoading, setQrLoading] = useState(false);
 
   const isApproved = myApp?.status === 'approved';
-
-  const isManiProfile = Boolean(
-    userProfile?.name?.toLowerCase().includes('mani') ||
-    userProfile?.email?.toLowerCase().includes('mani')
-  );
 
   const studentName = userProfile?.name || myApp?.name || (isManiProfile ? 'Mani Ladla' : 'Prakash');
   const collegeLabel =
@@ -223,6 +241,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const { stage1Status, stage2Status } = getApprovalStages(myApp);
 
+  const uiAvatar = userProfile?.avatarUrl || studentAvatar;
+
   const virtualPassData = {
     ticketNumber: passIdLabel,
     name: studentName,
@@ -239,8 +259,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     expiresAt: qrExpiresAt || myApp?.passExpiresAt || '2027-04-30',
     duration: isManiProfile ? 'Monthly' : myApp?.duration,
   };
-
-  const uiAvatar = userProfile?.avatarUrl || studentAvatar;
 
   // Persist student avatar in local storage so Conductor Scanner matches the student account photo exactly
   useEffect(() => {

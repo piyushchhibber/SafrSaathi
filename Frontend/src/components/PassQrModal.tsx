@@ -340,9 +340,15 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
         {/* Header */}
         <div className="bg-[#000666] text-white p-5 relative">
           <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-white text-[#000666] flex items-center justify-center font-bold text-xs">
-                P
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/30 shrink-0 bg-white shadow-xs flex items-center justify-center">
+                {displayAvatar ? (
+                  <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[#000666] font-extrabold text-sm">
+                    {displayName.charAt(0) || 'P'}
+                  </span>
+                )}
               </div>
               <div>
                 <h3 className="font-extrabold text-base leading-none">{t('passModal.title', 'PRTC DIGITAL PASS')}</h3>
