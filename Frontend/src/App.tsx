@@ -302,6 +302,7 @@ export default function App() {
               onOpenPassModal={(passData) => setActivePassData(passData)}
               onOpenApplicationModal={() => setIsStudentAppModalOpen(true)}
               onOpenEditProfile={() => setIsEditProfileOpen(true)}
+              onOpenWallet={() => setIsWalletOpen(true)}
             />
           )
         )}
@@ -321,6 +322,7 @@ export default function App() {
               userProfile={userProfile}
               onOpenPassModal={(passData) => setActivePassData(passData)}
               onOpenEditProfile={() => setIsEditProfileOpen(true)}
+              onOpenWallet={() => setIsWalletOpen(true)}
             />
           )
         )}
@@ -375,6 +377,7 @@ export default function App() {
               applications={applications}
               onUpdateApplication={handleUpdateApplication}
               onOpenEditProfile={() => setIsEditProfileOpen(true)}
+              onOpenWallet={() => setIsWalletOpen(true)}
             />
           )
         )}
