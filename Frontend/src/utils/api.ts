@@ -60,19 +60,142 @@ export type GoogleAuthResult =
   | { needsOnboarding: true; signupToken: string;
       prefill: { name: string; email: string; avatarUrl: string } };
 
-const WALLET_KEY_PREFIX = 'prtc_wallet_data_v1';
+const WALLET_KEY_PREFIX = 'prtc_wallet_data_v2';
+const LEGACY_WALLET_KEY = 'prtc_wallet_data_v1';
 
-function getLocalWallet(): { balance: number; transactions: WalletTransaction[] } {
+function sanitizeUserKey(raw: string): string {
+  return raw.trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
+}
+
+export function resolveUserKey(userOrKey?: UserProfile | Partial<UserProfile> | string | null): string {
+  if (typeof userOrKey === 'string' && userOrKey.trim()) {
+    return sanitizeUserKey(userOrKey);
+  }
+  if (userOrKey && typeof userOrKey === 'object') {
+    const candidate =
+      userOrKey.email ||
+      userOrKey.passId ||
+      userOrKey.id ||
+      userOrKey.phone ||
+      userOrKey.rollNo ||
+      userOrKey.name;
+    if (candidate) return sanitizeUserKey(String(candidate));
+  }
   try {
-    const raw = localStorage.getItem(WALLET_KEY_PREFIX);
-    if (raw) return JSON.parse(raw);
+    const rawSession = localStorage.getItem('prtc_active_session_v2');
+    if (rawSession) {
+      const parsed = JSON.parse(rawSession);
+      const prof = parsed?.profile;
+      if (prof && typeof prof === 'object') {
+        const candidate = prof.email || prof.passId || prof.id || prof.phone || prof.rollNo || prof.name;
+        if (candidate) return sanitizeUserKey(String(candidate));
+      }
+    }
   } catch {}
+  return 'default_guest';
+}
+
+function getCandidateKeys(userOrKey?: UserProfile | Partial<UserProfile> | string | null): string[] {
+  const keys: string[] = [];
+  if (typeof userOrKey === 'string' && userOrKey.trim()) {
+    keys.push(sanitizeUserKey(userOrKey));
+  } else if (userOrKey && typeof userOrKey === 'object') {
+    if (userOrKey.email) keys.push(sanitizeUserKey(userOrKey.email));
+    if (userOrKey.passId) keys.push(sanitizeUserKey(userOrKey.passId));
+    if (userOrKey.id) keys.push(sanitizeUserKey(userOrKey.id));
+    if (userOrKey.phone) keys.push(sanitizeUserKey(userOrKey.phone));
+    if (userOrKey.name) keys.push(sanitizeUserKey(userOrKey.name));
+  }
+  try {
+    const rawSession = localStorage.getItem('prtc_active_session_v2');
+    if (rawSession) {
+      const parsed = JSON.parse(rawSession);
+      const prof = parsed?.profile;
+      if (prof && typeof prof === 'object') {
+        if (prof.email) keys.push(sanitizeUserKey(prof.email));
+        if (prof.passId) keys.push(sanitizeUserKey(prof.passId));
+        if (prof.id) keys.push(sanitizeUserKey(prof.id));
+        if (prof.phone) keys.push(sanitizeUserKey(prof.phone));
+        if (prof.name) keys.push(sanitizeUserKey(prof.name));
+      }
+    }
+  } catch {}
+
+  const unique = Array.from(new Set(keys.filter(Boolean)));
+  return unique.length > 0 ? unique : ['default_guest'];
+}
+
+function migrateLegacyWalletIfPresent() {
+  try {
+    const legacyRaw = localStorage.getItem(LEGACY_WALLET_KEY);
+    if (legacyRaw) {
+      const legacyData = JSON.parse(legacyRaw);
+      if (legacyData && typeof legacyData.balance === 'number' && legacyData.balance > 0) {
+        // The legacy top-up was performed for Parteek Marve; assign it to Parteek storage keys
+        const parteekKeys = [
+          'parteek',
+          'parteek_marve',
+          'usr-parteek',
+          'prtc-stu-1023',
+          'parteek.marve09@gmail.com',
+          'parteek_marve09@gmail_com',
+        ];
+        for (const pk of parteekKeys) {
+          const safeKey = sanitizeUserKey(pk);
+          localStorage.setItem(`${WALLET_KEY_PREFIX}_${safeKey}`, JSON.stringify(legacyData));
+        }
+      }
+      localStorage.removeItem(LEGACY_WALLET_KEY);
+    }
+  } catch {}
+}
+
+migrateLegacyWalletIfPresent();
+
+function getLocalWallet(userOrKey?: UserProfile | Partial<UserProfile> | string | null): { balance: number; transactions: WalletTransaction[] } {
+  migrateLegacyWalletIfPresent();
+  const candidateKeys = getCandidateKeys(userOrKey);
+
+  for (const k of candidateKeys) {
+    try {
+      const raw = localStorage.getItem(`${WALLET_KEY_PREFIX}_${k}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.balance === 'number') {
+          return parsed;
+        }
+      }
+    } catch {}
+  }
+
+  // Check if any candidate is Parteek Marve
+  const isParteek = candidateKeys.some((k) => k.includes('parteek'));
+  if (isParteek) {
+    try {
+      const raw = localStorage.getItem(`${WALLET_KEY_PREFIX}_parteek`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.balance === 'number') {
+          return parsed;
+        }
+      }
+    } catch {}
+  }
+
   return { balance: 0, transactions: [] };
 }
 
-function saveLocalWallet(data: { balance: number; transactions: WalletTransaction[] }) {
+function saveLocalWallet(
+  data: { balance: number; transactions: WalletTransaction[] },
+  userOrKey?: UserProfile | Partial<UserProfile> | string | null
+) {
+  const candidateKeys = getCandidateKeys(userOrKey);
+  const primaryKey = candidateKeys[0] || 'default_guest';
   try {
-    localStorage.setItem(WALLET_KEY_PREFIX, JSON.stringify(data));
+    localStorage.setItem(`${WALLET_KEY_PREFIX}_${primaryKey}`, JSON.stringify(data));
+    if (candidateKeys.some((k) => k.includes('parteek'))) {
+      localStorage.setItem(`${WALLET_KEY_PREFIX}_parteek`, JSON.stringify(data));
+    }
   } catch {}
 }
 
@@ -364,18 +487,18 @@ export const api = {
     }),
 
   // Wallet with server-first + robust offline/fallback resilience
-  getWallet: async (): Promise<WalletInfo> => {
+  getWallet: async (user?: UserProfile | Partial<UserProfile> | string | null): Promise<WalletInfo> => {
     try {
       const serverRes = await request<WalletInfo>('/wallet');
       if (serverRes && typeof serverRes.balance === 'number') {
-        const local = getLocalWallet();
-        saveLocalWallet({ ...local, balance: serverRes.balance });
+        const local = getLocalWallet(user);
+        saveLocalWallet({ ...local, balance: serverRes.balance }, user);
         return serverRes;
       }
     } catch {
       // Server returned 404 or backend route not yet live on production
     }
-    const local = getLocalWallet();
+    const local = getLocalWallet(user);
     return {
       id: 'wal-local',
       balance: local.balance,
@@ -384,21 +507,22 @@ export const api = {
     };
   },
 
-  getWalletTransactions: async (): Promise<WalletTransaction[]> => {
+  getWalletTransactions: async (user?: UserProfile | Partial<UserProfile> | string | null): Promise<WalletTransaction[]> => {
     try {
       const serverTxns = await request<WalletTransaction[]>('/wallet/transactions');
       if (Array.isArray(serverTxns)) {
-        const local = getLocalWallet();
-        saveLocalWallet({ ...local, transactions: serverTxns });
+        const local = getLocalWallet(user);
+        saveLocalWallet({ ...local, transactions: serverTxns }, user);
         return serverTxns;
       }
     } catch {}
-    return getLocalWallet().transactions;
+    return getLocalWallet(user).transactions;
   },
 
   addMoneyToWallet: async (
     amount: number,
-    paymentMethod: string = 'upi'
+    paymentMethod: string = 'upi',
+    user?: UserProfile | Partial<UserProfile> | string | null
   ): Promise<{ balance: number; transaction: WalletTransaction }> => {
     try {
       return await request<{ balance: number; transaction: WalletTransaction }>('/wallet/add-money', {
@@ -407,12 +531,12 @@ export const api = {
       });
     } catch {
       // Seamless fallback if backend API is not yet live or returned 404
-      const local = getLocalWallet();
+      const local = getLocalWallet(user);
       const newBalance = Number((local.balance + amount).toFixed(2));
       const newTxn: WalletTransaction = {
         id: `wtxn-${Date.now()}`,
         walletId: 'wal-local',
-        userId: 'current-user',
+        userId: resolveUserKey(user),
         type: 'credit',
         amount,
         balanceAfter: newBalance,
@@ -422,7 +546,7 @@ export const api = {
         createdAt: new Date().toISOString(),
       };
       const updatedTxns = [newTxn, ...local.transactions];
-      saveLocalWallet({ balance: newBalance, transactions: updatedTxns });
+      saveLocalWallet({ balance: newBalance, transactions: updatedTxns }, user);
       return { balance: newBalance, transaction: newTxn };
     }
   },
@@ -430,7 +554,8 @@ export const api = {
   payFromWallet: async (
     amount: number,
     description: string = '',
-    referenceId?: string
+    referenceId?: string,
+    user?: UserProfile | Partial<UserProfile> | string | null
   ): Promise<{ balance: number; transaction: WalletTransaction }> => {
     try {
       return await request<{ balance: number; transaction: WalletTransaction }>('/wallet/pay', {
@@ -442,7 +567,7 @@ export const api = {
         throw err;
       }
       // Fallback
-      const local = getLocalWallet();
+      const local = getLocalWallet(user);
       if (local.balance < amount) {
         throw new Error(
           `Insufficient wallet balance. Available: ₹${local.balance.toFixed(2)}, Required: ₹${amount.toFixed(2)}`
@@ -452,7 +577,7 @@ export const api = {
       const newTxn: WalletTransaction = {
         id: `wtxn-${Date.now()}`,
         walletId: 'wal-local',
-        userId: 'current-user',
+        userId: resolveUserKey(user),
         type: 'debit',
         amount,
         balanceAfter: newBalance,
@@ -463,7 +588,7 @@ export const api = {
         createdAt: new Date().toISOString(),
       };
       const updatedTxns = [newTxn, ...local.transactions];
-      saveLocalWallet({ balance: newBalance, transactions: updatedTxns });
+      saveLocalWallet({ balance: newBalance, transactions: updatedTxns }, user);
       return { balance: newBalance, transaction: newTxn };
     }
   },

@@ -25,8 +25,8 @@ export const WalletDashboard: React.FC<WalletDashboardProps> = ({ userProfile, o
     setIsLoading(true);
     try {
       const [walletData, txnData] = await Promise.all([
-        api.getWallet(),
-        api.getWalletTransactions(),
+        api.getWallet(userProfile),
+        api.getWalletTransactions(userProfile),
       ]);
       setWallet(walletData);
       setTransactions(txnData);
@@ -39,7 +39,7 @@ export const WalletDashboard: React.FC<WalletDashboardProps> = ({ userProfile, o
 
   useEffect(() => {
     loadWalletData();
-  }, []);
+  }, [userProfile]);
 
   const handleAddMoney = async () => {
     const amt = customAmount ? parseFloat(customAmount) : addAmount;
@@ -51,7 +51,7 @@ export const WalletDashboard: React.FC<WalletDashboardProps> = ({ userProfile, o
 
     setIsProcessing(true);
     try {
-      const result = await api.addMoneyToWallet(amt, paymentMethod);
+      const result = await api.addMoneyToWallet(amt, paymentMethod, userProfile);
       setWallet((prev) => prev ? { ...prev, balance: result.balance } : prev);
       setTransactions((prev) => [result.transaction, ...prev]);
       setSuccessMessage(`₹${amt.toFixed(0)} added successfully!`);

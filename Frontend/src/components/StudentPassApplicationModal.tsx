@@ -48,7 +48,7 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
   useEffect(() => {
     if (isOpen) {
       setWalletLoading(true);
-      api.getWallet()
+      api.getWallet(userProfile)
         .then((w) => setWalletInfo(w))
         .catch(() => {})
         .finally(() => setWalletLoading(false));
@@ -101,7 +101,8 @@ export const StudentPassApplicationModal: React.FC<StudentPassApplicationModalPr
         const payRes = await api.payFromWallet(
           studentPayable,
           `Student Pass Concession Fee (${passDuration}) - ${collegeName || 'PRTC'}`,
-          userProfile?.passId || userProfile?.rollNo
+          userProfile?.passId || userProfile?.rollNo,
+          userProfile
         );
         if (payRes?.balance !== undefined) {
           setWalletInfo((prev) => (prev ? { ...prev, balance: payRes.balance } : prev));

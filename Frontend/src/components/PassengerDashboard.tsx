@@ -34,8 +34,8 @@ export const PassengerDashboard: React.FC<PassengerDashboardProps> = ({
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
-    api.getWallet().then((w) => setWalletBalance(w.balance)).catch(() => {});
-  }, []);
+    api.getWallet(userProfile).then((w) => setWalletBalance(w.balance)).catch(() => {});
+  }, [userProfile]);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedName, setEditedName] = useState(userProfile?.name || 'Priya Sharma');
   const [editedEmail, setEditedEmail] = useState(userProfile?.email || 'priya.sharma22@gmail.com');

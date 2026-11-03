@@ -64,7 +64,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
       setQrTimer(300);
       // Load wallet balance
       setWalletLoading(true);
-      api.getWallet().then((w) => setWalletInfo(w)).catch(() => {}).finally(() => setWalletLoading(false));
+      api.getWallet(item?.holderId || item?.holderName).then((w) => setWalletInfo(w)).catch(() => {}).finally(() => setWalletLoading(false));
       setPromoCodeInput('');
       setAppliedPromo(null);
       setPromoError(null);
@@ -139,7 +139,8 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
         const walletRes = await api.payFromWallet(
           finalPayableAmount,
           `Transit pass: ${item.title}`,
-          item.holderId
+          item.holderId,
+          item?.holderId || item?.holderName
         );
         walletTxnId = walletRes.transaction?.id || null;
         if (walletRes.balance !== undefined) {
