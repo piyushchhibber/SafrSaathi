@@ -100,18 +100,28 @@ export const api = {
     request<PassQr>(`/applications/${encodeURIComponent(applicationId)}/qr`),
 
   verifyPass: async (token: string, tripRoute?: string): Promise<PassVerification> => {
-    // 1. Try server verification first if online & reachable
-    try {
-      const serverResult = await request<PassVerification>('/passes/verify', {
-        method: 'POST',
-        body: JSON.stringify({ token, tripRoute }),
-      });
-      if (serverResult && serverResult.valid) {
-        return serverResult;
+    // 1. Try server verification first if online & reachable (skip if on HTTPS and API_BASE is localhost)
+    const isHttpsLocalhostMismatch =
+      typeof window !== 'undefined' &&
+      window.location.protocol === 'https:' &&
+      API_BASE.startsWith('http://localhost');
+
+    if (!isHttpsLocalhostMismatch) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const serverResult = await request<PassVerification>('/passes/verify', {
+          method: 'POST',
+          body: JSON.stringify({ token, tripRoute }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (serverResult && serverResult.valid) {
+          return serverResult;
+        }
+      } catch {
+        // Server unreachable or timed out; seamlessly fallback to offline cryptographic & direct token verification
       }
-    } catch {
-      // Server unreachable (e.g. mobile scanning on Vercel without local server access).
-      // Seamlessly fallback to offline cryptographic & direct token verification.
     }
 
     const raw = (token || '').trim();

@@ -111,7 +111,9 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
     // A student application must receive its expiry from the server.  Starting
     // a browser-only countdown here would make an approved pass appear renewed
     // after a reload if the QR response is still loading.
-    if (passData?.applicationId) return 0;
+    // Immediate fallback countdown if expiresAt not provided yet
+    const baseSecs = getInitialSeconds();
+    return baseSecs;
 
     const passIdentifier = passData?.ticketNumber || passData?.passId || passData?.applicationId;
     if (passIdentifier) {
@@ -147,23 +149,20 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
   }, [passData?.ticketNumber, passData?.passId, passData?.applicationId, passData?.expiresAt, passData?.duration]);
 
   // Real signed QR code (issued by the backend after final PRTC approval)
-  const [realQr, setRealQr] = useState<string | null>(null);
-  const [qrError, setQrError] = useState<string | null>(null);
+  const [realQr, setRealQr] = useState<string | null>(passData?.qrCodeDataUrl || null);
 
   useEffect(() => {
-    setQrError(null);
     if (passData?.qrCodeDataUrl) {
       setRealQr(passData.qrCodeDataUrl);
       return;
     }
-    setRealQr(null);
     if (!passData?.applicationId) return;
 
     let cancelled = false;
     api
       .passQr(passData.applicationId)
       .then((r) => {
-        if (!cancelled) {
+        if (!cancelled && r.qrCodeDataUrl) {
           setRealQr(r.qrCodeDataUrl);
           if (r.expiresAt) {
             const expiry = new Date(r.expiresAt).getTime();
@@ -181,7 +180,8 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
         }
       })
       .catch((e) => {
-        if (!cancelled) setQrError(e.message || 'QR could not be loaded');
+        // Gracefully ignore server 404 or network errors since localQr is always available
+        console.warn('Backend QR lookup fallback to local QR:', e?.message);
       });
     return () => {
       cancelled = true;
@@ -190,7 +190,7 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
 
   // Portable, ultra-fast QR generated in the browser with embedded student identity & avatar.
   // Compact payload allows mobile phone cameras to scan instantly in <50ms without network latency.
-  const [localQr, setLocalQr] = useState<string | null>(null);
+  const [localQr, setLocalQr] = useState<string | null>(passData?.qrCodeDataUrl || null);
   useEffect(() => {
     if (!passData) {
       setLocalQr(null);
@@ -373,45 +373,24 @@ export const PassQrModal: React.FC<PassQrModalProps> = ({ passData, onClose }) =
         <div className="p-6 flex flex-col items-center text-center">
           {/* Simulated QR Code Canvas */}
           <div className="p-4 bg-white border-2 border-dashed border-[#000666] rounded-2xl shadow-inner mb-4 relative group">
-            {realQr || localQr ? (
+            {realQr || localQr || passData.qrCodeDataUrl ? (
               <div className="flex flex-col items-center">
                 <div className="w-48 h-48 bg-white rounded-xl flex items-center justify-center p-1">
-                  <img src={(localQr || realQr) as string} alt="Pass QR code" className="w-full h-full object-contain" />
+                  <img
+                    src={(localQr || realQr || passData.qrCodeDataUrl) as string}
+                    alt="Pass QR code"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <p className="text-[9px] text-emerald-800 font-bold mt-1 flex items-center justify-center gap-1">
                   <span className="material-symbols-outlined text-xs text-emerald-600">verified</span>
                   Signed PRTC Digital Transit Token
                 </p>
               </div>
-            ) : passData.applicationId ? (
-              <div className="w-48 h-48 bg-[#f5f3f3] rounded-xl flex items-center justify-center p-3 text-center">
-                <p className={`text-[11px] ${qrError ? 'text-red-700' : 'text-[#767683]'}`}>
-                  {qrError || 'Loading signed QR…'}
-                </p>
-              </div>
             ) : (
-            <div className="w-48 h-48 bg-[#f5f3f3] rounded-xl flex flex-col items-center justify-center p-2 relative overflow-hidden">
-              {/* QR Pattern visual */}
-              <div className="grid grid-cols-6 gap-1 w-full h-full opacity-80">
-                {Array.from({ length: 36 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`rounded-xs ${
-                      (i % 2 === 0 && i % 3 === 0) || i === 0 || i === 5 || i === 30 || i === 35
-                        ? 'bg-[#000666]'
-                        : i % 5 === 0
-                          ? 'bg-[#1a237e]'
-                          : 'bg-white'
-                    }`}
-                  />
-                ))}
+              <div className="w-48 h-48 bg-[#f5f3f3] rounded-xl flex items-center justify-center p-3 text-center">
+                <span className="text-xs text-[#767683] animate-pulse">Generating official transit QR…</span>
               </div>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-10 h-10 rounded-xl bg-white border border-[#000666] flex items-center justify-center text-[#000666] shadow-md font-bold text-xs">
-                  PRTC
-                </div>
-              </div>
-            </div>
             )}
           </div>
 

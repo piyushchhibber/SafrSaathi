@@ -816,6 +816,25 @@ def ticket_verifications(
 def application_qr(app_id: str, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     application = db.get(StudentApplication, app_id)
     if not application:
+        clean = app_id.strip()
+        application = db.scalar(
+            select(StudentApplication).where(
+                (StudentApplication.id == clean)
+                | (StudentApplication.student_id == clean)
+                | (StudentApplication.roll_number == clean)
+                | (StudentApplication.pass_id == clean)
+                | (StudentApplication.name.ilike(clean))
+            ).order_by(StudentApplication.created_at.desc())
+        )
+        if not application and actor:
+            application = db.scalar(
+                select(StudentApplication).where(
+                    (StudentApplication.student_id == actor.id)
+                    | (StudentApplication.student_id == actor.pass_id)
+                    | (StudentApplication.name.ilike(actor.name))
+                ).order_by(StudentApplication.created_at.desc())
+            )
+    if not application:
         raise HTTPException(404, "Application not found")
     if application.status != "approved":
         raise HTTPException(409, "A QR pass is available only after final PRTC approval")
