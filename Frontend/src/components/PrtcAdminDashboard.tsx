@@ -1,3 +1,4 @@
+import { mergeWithInstitutionalApplications } from '../utils/storage';
 import React, { useState } from 'react';
 import { UserProfile, College, StudentApplication } from '../types';
 import { DocumentViewerModal, DocumentInfo } from './DocumentViewerModal';
@@ -75,8 +76,11 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
     (!!app.collegeName && app.collegeName.includes(col.name)) ||
     (!!app.collegeName && col.name.includes(app.collegeName));
 
+  // Ensure complete statewide student roster across all colleges
+  const effectiveApps = mergeWithInstitutionalApplications(applications);
+
   // Applications for this selected college
-  const collegeApps = (applications || []).filter((app) => {
+  const collegeApps = (effectiveApps || []).filter((app) => {
     if (!app) return false;
     const isAll = selectedCollegeId === 'all';
     const appCol = (app.collegeName || '').toLowerCase();
@@ -131,7 +135,7 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
     setSelectedApp(updatedApp);
   };
 
-  const stampedCount = applications.filter((a) => a.status === 'college_approved').length;
+  const stampedCount = effectiveApps.filter((a) => a.status === 'college_approved').length;
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in">
@@ -213,13 +217,13 @@ export const PrtcAdminDashboard: React.FC<PrtcAdminDashboardProps> = ({
             </div>
             <h4 className="font-extrabold text-xs leading-snug">All Punjab Institutions</h4>
             <p className={`text-[11px] mt-1 ${selectedCollegeId === 'all' ? 'text-[#bdc2ff]' : 'text-[#767683]'}`}>
-              {applications.length} Total Applications
+              {effectiveApps.length} Total Applications
             </p>
           </div>
 
           {colleges.map((col) => {
             const isSelected = col.id === selectedCollegeId;
-            const colApps = applications.filter((a) => appBelongsToCollege(a, col));
+            const colApps = effectiveApps.filter((a) => appBelongsToCollege(a, col));
             const readyForPrtc = colApps.filter((a) => a.status === 'college_approved').length;
             const totalForCol = colApps.length;
 

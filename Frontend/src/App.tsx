@@ -6,7 +6,7 @@ import {
   mockUserProfile,
   mockSchedules,
 } from './data/mockData';
-import { getStoredSession, saveStoredSession, getStoredApplications, saveStoredApplications, getStoredTickets, saveStoredTickets } from './utils/storage';
+import { getStoredSession, saveStoredSession, getStoredApplications, saveStoredApplications, getStoredTickets, saveStoredTickets, mergeWithInstitutionalApplications } from './utils/storage';
 import { api } from './utils/api';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -60,8 +60,9 @@ export default function App() {
     api.listApplications()
       .then((serverApps) => {
         if (serverApps && serverApps.length > 0) {
-          setApplications(serverApps);
-          saveStoredApplications(serverApps);
+          const merged = mergeWithInstitutionalApplications(serverApps);
+          setApplications(merged);
+          saveStoredApplications(merged);
         }
       })
       .catch((err) => console.warn('Could not load applications from server; using cached/demo applications', err));
@@ -83,8 +84,9 @@ export default function App() {
         if (data.colleges?.length) setColleges(data.colleges);
         if (data.schedules?.length) setSchedules(data.schedules);
         if (data.applications?.length) {
-          setApplications(data.applications);
-          saveStoredApplications(data.applications);
+          const merged = mergeWithInstitutionalApplications(data.applications);
+          setApplications(merged);
+          saveStoredApplications(merged);
         }
         if (data.tickets?.length) {
           setTickets(data.tickets);

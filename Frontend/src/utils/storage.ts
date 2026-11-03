@@ -6,35 +6,83 @@ const TICKETS_STORAGE_KEY = 'prtc_transit_tickets_v2';
 const USERS_STORAGE_KEY = 'prtc_registered_users_v2';
 const SESSION_STORAGE_KEY = 'prtc_active_session_v2';
 
-// 1. Applications Database
-export function getStoredApplications(fallback: StudentApplication[] = mockStudentApplications): StudentApplication[] {
+// 1. Applications Database with Institutional Guarantee
+export function mergeWithInstitutionalApplications(incomingApps: StudentApplication[] = []): StudentApplication[] {
+  const map = new Map<string, StudentApplication>();
+
+  // 1. Always seed with official institutional student applications
+  for (const app of mockStudentApplications) {
+    if (app && app.id) {
+      map.set(app.id, { ...app });
+    }
+  }
+
+  // 2. Overlay any previously saved local storage updates
   try {
     const raw = localStorage.getItem(APPS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Merge any fallback applications that are not yet in localStorage
-        const existingIds = new Set(parsed.map((a: StudentApplication) => a.id));
-        const missing = fallback.filter((a) => !existingIds.has(a.id));
-        if (missing.length > 0) {
-          const merged = [...parsed, ...missing];
-          try {
-            localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(merged));
-          } catch {}
-          return merged;
+      if (Array.isArray(parsed)) {
+        for (const app of parsed) {
+          if (app && app.id) {
+            // Check if matches an existing institutional app by name/roll to avoid duplicated student records
+            let matchedKey = map.has(app.id) ? app.id : null;
+            if (!matchedKey) {
+              for (const [k, v] of map.entries()) {
+                const nameMatch = v.name && app.name && v.name.trim().toLowerCase() === app.name.trim().toLowerCase();
+                const rollMatch = v.rollNumber && app.rollNumber && v.rollNumber === app.rollNumber;
+                if (nameMatch || rollMatch) {
+                  matchedKey = k;
+                  break;
+                }
+              }
+            }
+            if (matchedKey) {
+              map.set(matchedKey, { ...map.get(matchedKey), ...app, id: matchedKey });
+            } else {
+              map.set(app.id, app);
+            }
+          }
         }
-        return parsed;
       }
     }
-  } catch (e) {
-    console.error('Failed to load applications from localStorage', e);
+  } catch {}
+
+  // 3. Overlay incoming applications (e.g. from backend or active session)
+  for (const app of incomingApps) {
+    if (app && (app.id || app.name)) {
+      let matchedKey = app.id && map.has(app.id) ? app.id : null;
+      if (!matchedKey) {
+        for (const [k, v] of map.entries()) {
+          const nameMatch = v.name && app.name && v.name.trim().toLowerCase() === app.name.trim().toLowerCase();
+          const rollMatch = v.rollNumber && app.rollNumber && v.rollNumber === app.rollNumber;
+          if (nameMatch || rollMatch) {
+            matchedKey = k;
+            break;
+          }
+        }
+      }
+
+      if (matchedKey) {
+        map.set(matchedKey, { ...map.get(matchedKey), ...app, id: matchedKey });
+      } else {
+        const newId = app.id || `app-${Date.now()}`;
+        map.set(newId, { ...app, id: newId });
+      }
+    }
   }
-  return fallback;
+
+  return Array.from(map.values());
+}
+
+export function getStoredApplications(): StudentApplication[] {
+  return mergeWithInstitutionalApplications();
 }
 
 export function saveStoredApplications(apps: StudentApplication[]): void {
   try {
-    localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(apps));
+    const merged = mergeWithInstitutionalApplications(apps);
+    localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(merged));
   } catch (e) {
     console.error('Failed to save applications to localStorage', e);
   }
@@ -108,102 +156,70 @@ export function getStoredUsers(): RegisteredUserRecord[] {
       id: 'usr-corp-01',
       name: 'Simranjeet Kaur',
       email: 'simran.kaur@infosys.com',
-      phone: '+91 98722 34109',
+      phone: '+91 98722 44100',
       roleType: 'corporate',
-      institution: 'Infosys Mohali IT Development Center',
-      registeredAt: '18 Aug 2026',
-      lastLoginAt: 'Today',
+      institution: 'Infosys Limited (Mohali Development Centre)',
+      registeredAt: '10 Aug 2026',
+      lastLoginAt: 'Yesterday',
       avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
     },
     {
       id: 'usr-pass-01',
-      name: 'Priya Sharma',
-      email: 'priya.sharma22@gmail.com',
-      phone: '+91 98881 23456',
+      name: 'Rajinder Kumar',
+      email: 'rajinder.kumar@gmail.com',
+      phone: '+91 98881 22334',
       roleType: 'passenger',
-      institution: 'Punjab State Transit Commuter',
       registeredAt: '20 Aug 2026',
       lastLoginAt: 'Today',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'usr-college-01',
-      name: 'Dr. S. Kapoor',
-      email: 'deansw@pec.edu.in',
-      phone: '+91 98150 99881',
-      roleType: 'college_admin',
-      institution: 'Punjab Engineering College (PEC)',
-      registeredAt: '01 Aug 2026',
-      lastLoginAt: 'Today',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'usr-prtc-01',
-      name: 'S. Gurmukh Singh',
-      email: 'g.singh@prtc.punjab.gov.in',
-      phone: '+91 98140 11223',
-      roleType: 'prtc_admin',
-      institution: 'Pepsu Road Transport Corporation (Patiala HQ)',
-      registeredAt: '01 Jan 2026',
-      lastLoginAt: 'Today',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
     },
   ];
 }
 
-export function saveUserRecord(profile: UserProfile): void {
+export function saveStoredUsers(users: RegisteredUserRecord[]): void {
   try {
-    const existing = getStoredUsers();
-    const nowStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const matchIdx = existing.findIndex(
-      (u) =>
-        (profile.email && u.email.toLowerCase() === profile.email.toLowerCase()) ||
-        (profile.phone && u.phone === profile.phone) ||
-        (profile.passId && u.id === profile.passId)
-    );
-
-    const record: RegisteredUserRecord = {
-      id: profile.passId || (profile as any).adminId || `usr-${Date.now()}`,
-      name: profile.name,
-      email: profile.email,
-      phone: profile.phone || '',
-      roleType: profile.roleType,
-      institution: profile.college || profile.companyName || profile.institution,
-      registeredAt: matchIdx >= 0 ? existing[matchIdx].registeredAt : nowStr,
-      lastLoginAt: 'Just now',
-      avatarUrl: profile.avatarUrl,
-      aadhaarNumber: profile.aadhaarNumber,
-    };
-
-    if (matchIdx >= 0) {
-      existing[matchIdx] = record;
-    } else {
-      existing.unshift(record);
-    }
-
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(existing));
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
   } catch (e) {
-    console.error('Failed to save user record', e);
+    console.error('Failed to save users to localStorage', e);
   }
 }
 
-// 4. Active Session
-export function getStoredSession(): { profile: UserProfile; role: string } | null {
+// 4. Active Authenticated Session
+export interface StoredSession {
+  profile: UserProfile;
+  role: string;
+  savedAt: string;
+}
+
+export function getStoredSession(): StoredSession | null {
   try {
     const raw = localStorage.getItem(SESSION_STORAGE_KEY);
     if (raw) {
       return JSON.parse(raw);
     }
   } catch (e) {
-    console.error('Failed to load session from localStorage', e);
+    console.error('Failed to parse session from localStorage', e);
   }
   return null;
 }
 
 export function saveStoredSession(profile: UserProfile, role: string): void {
   try {
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ profile, role }));
+    const session: StoredSession = {
+      profile,
+      role,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
   } catch (e) {
     console.error('Failed to save session to localStorage', e);
+  }
+}
+
+export function clearStoredSession(): void {
+  try {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch (e) {
+    console.error('Failed to clear session from localStorage', e);
   }
 }

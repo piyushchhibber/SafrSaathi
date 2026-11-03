@@ -1,3 +1,4 @@
+import { mergeWithInstitutionalApplications } from '../utils/storage';
 import React, { useState } from 'react';
 import { UserProfile, College, StudentApplication } from '../types';
 import { DocumentViewerModal, DocumentInfo } from './DocumentViewerModal';
@@ -58,8 +59,11 @@ export const CollegeAdminDashboard: React.FC<CollegeAdminDashboardProps> = ({
     setIsDocModalOpen(true);
   };
 
+  // Merge with institutional database so all students of CGC Landran & other colleges are always visible
+  const effectiveApps = mergeWithInstitutionalApplications(applications);
+
   // Filter apps
-  const collegeApps = (applications || []).filter((app) => {
+  const collegeApps = (effectiveApps || []).filter((app) => {
     if (!app) return false;
     const appColName = (app.collegeName || '').toLowerCase();
     const selCol = (selectedCollege || '').toLowerCase();
@@ -77,7 +81,7 @@ export const CollegeAdminDashboard: React.FC<CollegeAdminDashboardProps> = ({
     return matchesCol && matchesStatus && matchesSearch;
   });
 
-  const pendingCount = (applications || []).filter((a) => {
+  const pendingCount = (effectiveApps || []).filter((a) => {
     if (!a || a.status !== 'pending') return false;
     const selCol = (selectedCollege || '').toLowerCase();
     const isAll = selCol === '' || selCol.includes('all colleges');
